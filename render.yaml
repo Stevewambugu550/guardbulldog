@@ -5,35 +5,18 @@ services:
     env: node
     buildCommand: npm install
     startCommand: node server/index.js
-    plan: free
     envVars:
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
         generateValue: true
-      - key: PORT
-        value: 5000
 
-  # Frontend
+  # Frontend  
   - type: web
     name: guardbulldog-frontend
     env: static
     buildCommand: cd client && npm install && npm run build
-    staticPublishPath: client/build
-    plan: free
+    staticPublishPath: ./client/build
     envVars:
       - key: REACT_APP_API_URL
         value: https://guardbulldog-api.onrender.com
-      - key: JWT_SECRET
-        generateValue: true
-      - key: PORT
-        value: 5000
-      - key: CLIENT_URL
-        sync: false
-    autoDeploy: true
-
-  # PostgreSQL Database
-databases:
-  - name: guardbulldog-db
-    databaseName: guardbulldog
-    user: guardbulldog
