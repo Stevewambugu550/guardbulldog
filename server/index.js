@@ -22,7 +22,7 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: ['http://localhost:3000', 'https://guardbulldog.netlify.app', 'https://guardbulldog-api.onrender.com'],
   credentials: true
 }));
 app.use(helmet());
