@@ -1,6 +1,10 @@
 # 🛡️ GUARDBULLDOG - Phishing Awareness & Reporting System
 
-**A comprehensive cybersecurity platform for Bowie State University to combat phishing attacks through education, reporting, and real-time threat analysis.**
+**A comprehensive, enterprise-grade cybersecurity platform designed for Bowie State University to combat phishing attacks through interactive education, streamlined incident reporting, and real-time threat intelligence analysis.**
+
+## 📋 Executive Summary
+
+GuardBulldog is a full-stack web application that empowers students, faculty, and staff to actively participate in cybersecurity defense by providing tools to recognize, report, and learn about phishing threats. The platform combines user-friendly reporting mechanisms with administrative dashboards for security analysts, creating a complete ecosystem for phishing incident management and awareness training.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-v14+-green.svg)](https://nodejs.org/)
@@ -11,11 +15,17 @@
 
 ## 👥 Development Team
 
-- **Ashleigh Mosley** - System Project Manager
-- **Amanda B** - System Designer/Architect/Engineer
-- **Enrique Wallace** - System Implementator
-- **Moustapha** - System Analyst and Tester
-- **Victory Ubogu** - System Developer
+| Role | Team Member | Responsibilities |
+|------|-------------|------------------|
+| **System Project Manager** | Ashleigh Mosley | Project coordination, timeline management, stakeholder communication, resource allocation |
+| **System Designer/Architect** | Amanda Burroughs | System architecture design, technology stack selection, scalability planning, compliance oversight |
+| **System Implementator** | Enrique Wallace | Infrastructure setup, deployment configuration, server management, integration testing |
+| **System Analyst & Tester** | Moustapha Thiam | Requirements analysis, quality assurance, usability testing, documentation |
+| **System Developer** | Victory Ubogu | Full-stack development, database design, API implementation, security features |
+
+**Academic Institution:** Bowie State University  
+**Course:** INSS780-400: Information Systems Practicum 1  
+**Semester:** Fall 2025
 
 ---
 
@@ -51,23 +61,40 @@
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Technology Stack
 
-### Backend
-- **Node.js** - Runtime environment
-- **Express.js** - Web framework
-- **PostgreSQL** - Database
-- **JWT** - Authentication
-- **Bcrypt** - Password hashing
-- **Multer** - File uploads
+### Backend Technologies
+| Technology | Version | Purpose |
+|------------|---------|----------|
+| **Node.js** | v14+ | JavaScript runtime environment for server-side execution |
+| **Express.js** | v4.18+ | Minimalist web framework for RESTful API development |
+| **PostgreSQL** | v12+ | Relational database management system for structured data storage |
+| **JWT (jsonwebtoken)** | v9.0+ | Stateless authentication and authorization |
+| **Bcrypt** | v5.1+ | Secure password hashing with salt rounds |
+| **Multer** | v1.4+ | Middleware for handling multipart/form-data file uploads |
+| **Helmet.js** | v7.0+ | Security middleware for setting HTTP headers |
+| **CORS** | v2.8+ | Cross-Origin Resource Sharing configuration |
+| **Dotenv** | v16.0+ | Environment variable management |
 
-### Frontend
-- **React 18** - UI framework
-- **React Router** - Navigation
-- **Axios** - HTTP client
-- **TailwindCSS** - Styling
-- **React Hook Form** - Form handling
-- **React Hot Toast** - Notifications
+### Frontend Technologies
+| Technology | Version | Purpose |
+|------------|---------|----------|
+| **React** | v18.2+ | Component-based UI library for building interactive interfaces |
+| **React Router DOM** | v6.0+ | Client-side routing and navigation |
+| **Axios** | v1.4+ | Promise-based HTTP client for API requests |
+| **TailwindCSS** | v3.3+ | Utility-first CSS framework for responsive design |
+| **React Hook Form** | v7.45+ | Performant form validation and state management |
+| **React Hot Toast** | v2.4+ | Lightweight notification system |
+| **Lucide React** | v0.263+ | Modern icon library |
+
+### Development & Deployment
+| Tool | Purpose |
+|------|----------|
+| **Git** | Version control and collaboration |
+| **npm** | Package management |
+| **Heroku** | Cloud platform for deployment |
+| **Netlify** | Frontend hosting and continuous deployment |
+| **PostgreSQL (Heroku)** | Managed database service |
 
 ---
 

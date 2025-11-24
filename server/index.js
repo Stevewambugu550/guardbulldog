@@ -2,10 +2,12 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const connectDB = require('./config/db');
+const pool = require('./config/database');
 
-// Connect to Database
-connectDB();
+// Test Database Connection (non-blocking)
+pool.query('SELECT NOW()')
+  .then(() => console.log('✅ Database connected successfully'))
+  .catch(err => console.log('⚠️ Database not connected:', err.message));
 
 const app = express();
 const fs = require('fs');
@@ -37,6 +39,10 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/guest', require('./routes/guestRoutes'));
+app.use('/api/intelligence', require('./routes/intelligenceRoutes'));
+app.use('/api/education', require('./routes/education'));
+app.use('/api/inquiry', require('./routes/inquiry'));
 
 // 404 Handler for API routes
 app.use('/api/*', (req, res) => {

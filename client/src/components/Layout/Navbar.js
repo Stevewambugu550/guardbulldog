@@ -95,15 +95,11 @@ const Navbar = ({ onMobileMenuToggle, isMobileMenuOpen }) => {
             </button>
 
             <Link to="/app/dashboard" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center">
-                <img
-                  src="/logo.png"
-                  alt="GUARDBULLDOG Logo"
-                  className="w-full h-full object-contain"
-                />
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-md">
+                <span className="text-2xl">🛡️</span>
               </div>
               <div className="hidden lg:block">
-                <span className="text-xl font-bold text-gray-800">GUARD<span className="text-secondary">BULLDOG</span></span>
+                <span className="text-xl font-bold text-gray-800">GUARD<span className="text-blue-600">BULLDOG</span></span>
                 <div className="text-xs text-gray-500 -mt-1">Phishing Protection</div>
               </div>
             </Link>

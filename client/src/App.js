@@ -27,6 +27,8 @@ import AdminReports from './pages/Admin/AdminReports';
 import AdminUsers from './pages/Admin/AdminUsers';
 import SystemSettings from './pages/Admin/SystemSettings';
 import SecurityLogs from './pages/Admin/SecurityLogs';
+import GuestReport from './pages/Guest/GuestReport';
+import TrackReport from './pages/Guest/TrackReport';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -77,6 +79,10 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
+              
+              {/* Guest Reporting Routes (No Auth Required) */}
+              <Route path="/guest-report" element={<GuestReport />} />
+              <Route path="/track-report" element={<TrackReport />} />
               
               {/* Public Auth Routes */}
               <Route path="/login" element={

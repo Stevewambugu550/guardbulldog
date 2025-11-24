@@ -11,6 +11,8 @@ import {
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 const Education = () => {
   const [filters, setFilters] = useState({
     category: '',
@@ -19,7 +21,7 @@ const Education = () => {
 
   const { data: modules, isLoading } = useQuery(
     ['educationModules', filters],
-    () => axios.get('/api/education/modules', { params: filters }).then(res => res.data),
+    () => axios.get(`${API_URL}/api/education/modules`, { params: filters }).then(res => res.data),
     {
       keepPreviousData: true
     }
@@ -27,7 +29,7 @@ const Education = () => {
 
   const { data: progress } = useQuery(
     'educationProgress',
-    () => axios.get('/api/education/progress').then(res => res.data)
+    () => axios.get(`${API_URL}/api/education/progress`).then(res => res.data)
   );
 
   const getDifficultyColor = (difficulty) => {

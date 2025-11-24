@@ -12,6 +12,8 @@ import {
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import toast from 'react-hot-toast';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 const ModuleDetails = () => {
   const { moduleId } = useParams();
   const navigate = useNavigate();
@@ -23,14 +25,14 @@ const ModuleDetails = () => {
 
   const { data: module, isLoading } = useQuery(
     ['educationModule', moduleId],
-    () => axios.get(`/api/education/modules/${moduleId}`).then(res => res.data),
+    () => axios.get(`${API_URL}/api/education/modules/${moduleId}`).then(res => res.data),
     {
       enabled: !!moduleId
     }
   );
 
   const submitQuizMutation = useMutation(
-    (quizData) => axios.post(`/api/education/modules/${moduleId}/quiz`, quizData),
+    (quizData) => axios.post(`${API_URL}/api/education/modules/${moduleId}/quiz`, quizData),
     {
       onSuccess: (response) => {
         const { passed, score } = response.data;

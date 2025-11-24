@@ -15,6 +15,9 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // API Base URL
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   // Configure axios defaults
   useEffect(() => {
@@ -54,7 +57,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('/.netlify/functions/login-simple', { email, password });
+      const response = await axios.post(`${API_URL}/api/auth/login`, { email, password });
       const { token, user: userData } = response.data;
 
       localStorage.setItem('token', token);
@@ -73,7 +76,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const response = await axios.post('/.netlify/functions/register-simple', userData);
+      const response = await axios.post(`${API_URL}/api/auth/register`, userData);
       const { token, user: newUser } = response.data;
 
       localStorage.setItem('token', token);
@@ -99,7 +102,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (profileData) => {
     try {
-      const response = await axios.put('/api/auth/profile', profileData);
+      const response = await axios.put(`${API_URL}/api/auth/profile`, profileData);
       setUser(response.data.user);
       toast.success('Profile updated successfully');
       return { success: true };
@@ -112,7 +115,7 @@ export const AuthProvider = ({ children }) => {
 
   const changePassword = async (currentPassword, newPassword) => {
     try {
-      await axios.put('/api/auth/change-password', {
+      await axios.put(`${API_URL}/api/auth/change-password`, {
         currentPassword,
         newPassword
       });

@@ -105,6 +105,43 @@ const Home = () => {
         </div>
       </div>
 
+      {/* Guest Reporting Banner */}
+      <div className="bg-gradient-to-r from-orange-500 to-red-600 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            <div className="text-white mb-6 md:mb-0 text-center md:text-left">
+              <h2 className="text-3xl font-bold mb-2 flex items-center justify-center md:justify-start">
+                <ExclamationTriangleIcon className="w-8 h-8 mr-3" />
+                Suspicious Email? Report It Now!
+              </h2>
+              <p className="text-lg text-orange-100">
+                No account needed • Takes 30 seconds • Help protect our community
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link to="/guest-report">
+                <Button 
+                  variant="secondary" 
+                  size="lg" 
+                  className="w-full sm:w-auto bg-white text-red-600 hover:bg-gray-100 font-bold"
+                >
+                  Report Anonymous
+                </Button>
+              </Link>
+              <Link to="/track-report">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="w-full sm:w-auto border-2 border-white text-white hover:bg-white hover:text-red-600 font-bold"
+                >
+                  Track Report
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Stats Section */}
       <div className="bg-gray-100 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -190,12 +227,12 @@ const Home = () => {
             <div>
               <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
               <ul className="space-y-2 text-gray-400">
+                <li><Link to="/guest-report" className="hover:text-white font-semibold text-orange-400">Report Phishing (No Login)</Link></li>
+                <li><Link to="/track-report" className="hover:text-white">Track Report</Link></li>
                 <li><Link to="/about" className="hover:text-white">About</Link></li>
                 <li><Link to="/contact" className="hover:text-white">Contact</Link></li>
-                <li><Link to="/login" className="text-gray-600 hover:text-secondary transition-colors">Login</Link></li>
+                <li><Link to="/login" className="hover:text-white">Login</Link></li>
                 <li><Link to="/register" className="hover:text-white">Register</Link></li>
-                <li><button className="hover:text-white">Help Center</button></li>
-                <li><button className="hover:text-white">Contact IT</button></li>
               </ul>
             </div>
             <div>

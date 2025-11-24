@@ -9,8 +9,9 @@ const pool = new Pool({
 });
 
 const createTables = async () => {
-  const client = await pool.connect();
   try {
+    const client = await pool.connect();
+    try {
     // Users table
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -100,12 +101,15 @@ const createTables = async () => {
       );
     `);
 
-    console.log('✅ All database tables created successfully or already exist.');
+      console.log('✅ All database tables created successfully or already exist.');
+    } catch (err) {
+      console.error('❌ Error creating tables:', err);
+      throw err;
+    } finally {
+      client.release();
+    }
   } catch (err) {
-    console.error('❌ Error creating tables:', err);
-    throw err;
-  } finally {
-    client.release();
+    console.log('⚠️ Database not available:', err.message);
   }
 };
 

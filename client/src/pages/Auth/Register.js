@@ -72,7 +72,19 @@ const Register = () => {
     if (!validateForm()) return;
 
     setLoading(true);
-    const { confirmPassword, ...registrationData } = formData;
+    const { confirmPassword, name, ...restData } = formData;
+    
+    // Split name into firstName and lastName
+    const nameParts = name.trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || nameParts[0];
+    
+    const registrationData = {
+      ...restData,
+      firstName,
+      lastName
+    };
+    
     const result = await register(registrationData);
     
     if (result.success) {

@@ -19,10 +19,11 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
-    // Validate Bowie State email
-    if (!email.endsWith('@bowie.edu') && !email.endsWith('@bowiestate.edu')) {
-      return res.status(400).json({ message: 'Only Bowie State University email addresses are allowed' });
-    }
+    // Email validation (relaxed for development/testing)
+    // Uncomment below for production with Bowie State emails only
+    // if (!email.endsWith('@bowie.edu') && !email.endsWith('@bowiestate.edu')) {
+    //   return res.status(400).json({ message: 'Only Bowie State University email addresses are allowed' });
+    // }
 
     // Hash password
     const salt = await bcrypt.genSalt(12);

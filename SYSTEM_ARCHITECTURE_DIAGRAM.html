@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuardBulldog System Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            font-size: 1.2em;
+            margin-bottom: 40px;
+        }
+        .architecture {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+        .layer {
+            background: #f7fafc;
+            border-radius: 15px;
+            padding: 30px;
+            border: 3px solid #e2e8f0;
+        }
+        .layer-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #4299e1;
+        }
+        .components {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .component {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 4px solid #4299e1;
+            transition: transform 0.3s;
+        }
+        .component:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+        }
+        .component-title {
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        .component-desc {
+            color: #718096;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+        .icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        .flow-arrow {
+            text-align: center;
+            font-size: 2em;
+            color: #4299e1;
+            margin: 20px 0;
+        }
+        .ai-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+        .ai-section .layer-title {
+            color: white;
+            border-bottom-color: white;
+        }
+        .ai-section .component {
+            background: rgba(255,255,255,0.1);
+            border-left-color: white;
+            color: white;
+        }
+        .ai-section .component-title {
+            color: white;
+        }
+        .ai-section .component-desc {
+            color: rgba(255,255,255,0.9);
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 40px;
+            padding: 20px;
+            background: #edf2f7;
+            border-radius: 10px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .legend-box {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+        }
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ GuardBulldog System Architecture</h1>
+        <p class="subtitle">Phishing Detection & Prevention Platform - Bowie State University</p>
+        
+        <div class="architecture">
+            <!-- FRONTEND LAYER -->
+            <div class="layer">
+                <div class="layer-title">📱 Frontend Layer (React)</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="icon">🏠</div>
+                        <div class="component-title">Public Pages</div>
+                        <div class="component-desc">
+                            • Landing Page<br>
+                            • Guest Reporting<br>
+                            • Report Tracking<br>
+                            • Login/Register
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="icon">👤</div>
+                        <div class="component-title">User Dashboard</div>
+                        <div class="component-desc">
+                            • Statistics Overview<br>
+                            • Recent Activity<br>
+                            • Quick Actions<br>
+                            • Profile Management
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="icon">⚠️</div>
+                        <div class="component-title">Report Management</div>
+                        <div class="component-desc">
+                            • Submit Reports<br>
+                            • View My Reports<br>
+                            • Report Details<br>
+                            • Status Tracking
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="icon">🎓</div>
+                        <div class="component-title">Education Center</div>
+                        <div class="component-desc">
+                            • 6 Learning Modules<br>
+                            • Interactive Quizzes<br>
+                            • Progress Tracking<br>
+                            • Certificates
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flow-arrow">⬇️</div>
+
+            <!-- API LAYER -->
+            <div class="layer">
+                <div class="layer-title">🔌 API Layer (Express/Node.js)</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="icon">🔐</div>
+                        <div class="component-title">Authentication API</div>
+                        <div class="component-desc">
+                            • User Registration<br>
+                            • Login/Logout<br>
+                            • JWT Token Management<br>
+                            • Password Hashing
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="icon">📝</div>
+                        <div class="component-title">Reports API</div>
+                        <div class="component-desc">
+                            • Submit Reports<br>
+                            • Query Reports<br>
+                            • Update Status<br>
+                            • Add Notes
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="icon">👥</div>
+                        <div class="component-title">Guest API</div>
+                        <div class="component-desc">
+                            • Anonymous Submissions<br>
+                            • Tracking Tokens<br>
+                            • Rate Limiting<br>
+                            • Status Checking
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="icon">📚</div>
+                        <div class="component-title">Education API</div>
+                        <div class="component-desc">
+                            • Module Delivery<br>
+                            • Quiz Submission<br>
+                            • Progress Tracking<br>
+                            • Score Calculation
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flow-arrow">⬇️</div>
+
+            <!-- AI & INTELLIGENCE LAYER -->
+            <div class="layer ai-section">
+                <div class="layer-title">🤖 AI & Intelligence Layer</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="icon">🧠</div>
+                        <div class="component-title">AI Threat Detection</div>
+                        <div class="component-desc">
+                            • Email Content Analysis<br>
+                            • Pattern Recognition<br>
+                            • ML Classification<br>
+                            • Confidence Scoring
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="icon">🌍</div>
+                        <div class="component-title">IP Intelligence</div>
+                        <div class="component-desc">
+                            • Geolocation Lookup<br>
+                            • ISP Identification<br>
+                            • Threat Level Analysis<br>
+                            • Reputation Scoring
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="icon">🔍</div>
+                        <div class="component-title">URL Analysis</div>
+                        <div class="component-desc">
+                            • Link Extraction<br>
+                            • Domain Verification<br>
+                            • Blacklist Checking<br>
+                            • Redirect Detection
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="icon">📊</div>
+                        <div class="component-title">Analytics Engine</div>
+                        <div class="component-desc">
+                            • Trend Analysis<br>
+                            • Threat Aggregation<br>
+                            • Risk Scoring<br>
+                            • Predictive Modeling
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flow-arrow">⬇️</div>
+
+            <!-- DATA LAYER -->
+            <div class="layer">
+                <div class="layer-title">💾 Data Storage Layer</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="icon">👤</div>
+                        <div class="component-title">User Database</div>
+                        <div class="component-desc">
+                            • User Profiles<br>
+                            • Authentication Data<br>
+                            • Roles & Permissions<br>
+                            • Department Info
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="icon">📧</div>
+                        <div class="component-title">Email Repository</div>
+                        <div class="component-desc">
+                            • Report Submissions<br>
+                            • Email Headers<br>
+                            • Suspicious URLs<br>
+                            • Attachments Metadata
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="icon">🌐</div>
+                        <div class="component-title">IP Database</div>
+                        <div class="component-desc">
+                            • IP Addresses<br>
+                            • Geolocation Data<br>
+                            • Reputation Scores<br>
+                            • Blacklist Records
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="icon">📈</div>
+                        <div class="component-title">Analytics Data</div>
+                        <div class="component-desc">
+                            • Report Statistics<br>
+                            • User Progress<br>
+                            • Threat Trends<br>
+                            • System Metrics
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flow-arrow">⬇️</div>
+
+            <!-- SECURITY LAYER -->
+            <div class="layer">
+                <div class="layer-title">🔒 Security & Infrastructure</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="icon">🛡️</div>
+                        <div class="component-title">Authentication</div>
+                        <div class="component-desc">
+                            • JWT Tokens<br>
+                            • Password Encryption<br>
+                            • Session Management<br>
+                            • Role-Based Access
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="icon">🚦</div>
+                        <div class="component-title">Rate Limiting</div>
+                        <div class="component-desc">
+                            • Request Throttling<br>
+                            • IP-Based Limits<br>
+                            • Abuse Prevention<br>
+                            • DDOS Protection
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="icon">📝</div>
+                        <div class="component-title">Audit Logging</div>
+                        <div class="component-desc">
+                            • User Actions<br>
+                            • System Events<br>
+                            • Security Alerts<br>
+                            • Compliance Tracking
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="icon">🔐</div>
+                        <div class="component-title">Data Protection</div>
+                        <div class="component-desc">
+                            • Input Validation<br>
+                            • SQL Injection Prevention<br>
+                            • XSS Protection<br>
+                            • CORS Configuration
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box" style="background: #4299e1;"></div>
+                <span>User-Facing</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                <span>AI-Powered</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: #48bb78;"></div>
+                <span>Data Storage</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: #ed8936;"></div>
+                <span>Security</span>
+            </div>
+        </div>
+
+        <div style="margin-top: 40px; padding: 20px; background: #edf2f7; border-radius: 10px; text-align: center;">
+            <h3 style="color: #2d3748; margin-bottom: 10px;">System Features</h3>
+            <p style="color: #718096; line-height: 1.8;">
+                ✅ Guest Reporting • ✅ User Authentication • ✅ IP Intelligence • ✅ Threat Detection<br>
+                ✅ Education Modules • ✅ Progress Tracking • ✅ Admin Dashboard • ✅ Real-time Analytics
+            </p>
+        </div>
+    </div>
+</body>
+</html>

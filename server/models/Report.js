@@ -1,191 +1,165 @@
-const db = require('../config/db');
+// In-memory storage for reports (no database required)
+let reports = [];
+let nextId = 1;
 
 const Report = {
   async create(report) {
     const { reportedBy, emailSubject, senderEmail, emailBody, reportType, suspiciousLinks, attachments } = report;
-    const sql = `
-      INSERT INTO reports 
-      ("reportedBy", "emailSubject", "senderEmail", "emailBody", "reportType", "suspiciousLinks", attachments, status) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-      RETURNING *
-    `;
-    const params = [reportedBy, emailSubject, senderEmail, emailBody, reportType, suspiciousLinks, attachments, 'pending'];
-    const result = await db.query(sql, params);
-    return result.rows[0];
+    const newReport = {
+      id: nextId++,
+      reportedBy,
+      emailSubject,
+      senderEmail,
+      emailBody,
+      reportType,
+      suspiciousLinks,
+      attachments,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    reports.push(newReport);
+    return newReport;
   },
 
   async findById(id) {
-    const sql = `
-      SELECT r.*, 
-             u."firstName", u."lastName", u.email as "reporterEmail"
-      FROM reports r
-      LEFT JOIN users u ON r."reportedBy" = u.id
-      WHERE r.id = $1
-    `;
-    const result = await db.query(sql, [id]);
-    return result.rows[0];
+    return reports.find(r => r.id === parseInt(id));
   },
 
   async findByUserId(userId, filters = {}) {
-    let sql = `
-      SELECT r.*, u."firstName", u."lastName"
-      FROM reports r
-      LEFT JOIN users u ON r."reportedBy" = u.id
-      WHERE r."reportedBy" = $1
-    `;
-    const params = [userId];
-
+    let userReports = reports.filter(r => r.reportedBy === parseInt(userId));
+    
     if (filters.status) {
-      params.push(filters.status);
-      sql += ` AND r.status = $${params.length}`;
+      userReports = userReports.filter(r => r.status === filters.status);
     }
-
+    
     if (filters.reportType) {
-      params.push(filters.reportType);
-      sql += ` AND r."reportType" = $${params.length}`;
+      userReports = userReports.filter(r => r.reportType === filters.reportType);
     }
-
-    sql += ` ORDER BY r."createdAt" DESC`;
-
+    
+    userReports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
     if (filters.limit) {
-      params.push(filters.limit);
-      sql += ` LIMIT $${params.length}`;
+      userReports = userReports.slice(0, filters.limit);
     }
-
-    const result = await db.query(sql, params);
-    return result.rows;
+    
+    return userReports;
   },
 
   async findAll(filters = {}) {
-    let sql = `
-      SELECT r.*, 
-             u."firstName", u."lastName", u.email as "reporterEmail"
-      FROM reports r
-      LEFT JOIN users u ON r."reportedBy" = u.id
-      WHERE 1=1
-    `;
-    const params = [];
-
+    let allReports = [...reports];
+    
     if (filters.status) {
-      params.push(filters.status);
-      sql += ` AND r.status = $${params.length}`;
+      allReports = allReports.filter(r => r.status === filters.status);
     }
-
+    
     if (filters.reportType) {
-      params.push(filters.reportType);
-      sql += ` AND r."reportType" = $${params.length}`;
+      allReports = allReports.filter(r => r.reportType === filters.reportType);
     }
-
+    
     if (filters.startDate) {
-      params.push(filters.startDate);
-      sql += ` AND r."createdAt" >= $${params.length}`;
+      allReports = allReports.filter(r => new Date(r.createdAt) >= new Date(filters.startDate));
     }
-
+    
     if (filters.endDate) {
-      params.push(filters.endDate);
-      sql += ` AND r."createdAt" <= $${params.length}`;
+      allReports = allReports.filter(r => new Date(r.createdAt) <= new Date(filters.endDate));
     }
-
-    sql += ` ORDER BY r."createdAt" DESC`;
-
-    if (filters.limit) {
-      params.push(filters.limit);
-      sql += ` LIMIT $${params.length}`;
-    }
-
+    
+    allReports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
     if (filters.offset) {
-      params.push(filters.offset);
-      sql += ` OFFSET $${params.length}`;
+      allReports = allReports.slice(filters.offset);
     }
-
-    const result = await db.query(sql, params);
-    return result.rows;
+    
+    if (filters.limit) {
+      allReports = allReports.slice(0, filters.limit);
+    }
+    
+    return allReports;
   },
 
   async updateStatus(id, status, updatedBy) {
-    const sql = `
-      UPDATE reports 
-      SET status = $1, "updatedBy" = $2, "updatedAt" = CURRENT_TIMESTAMP
-      WHERE id = $3
-      RETURNING *
-    `;
-    const result = await db.query(sql, [status, updatedBy, id]);
-    return result.rows[0];
+    const reportIndex = reports.findIndex(r => r.id === parseInt(id));
+    if (reportIndex === -1) return null;
+    
+    reports[reportIndex].status = status;
+    reports[reportIndex].updatedBy = updatedBy;
+    reports[reportIndex].updatedAt = new Date().toISOString();
+    
+    return reports[reportIndex];
   },
 
   async addNote(reportId, note, addedBy) {
-    const sql = `
-      INSERT INTO report_notes ("reportId", note, "addedBy")
-      VALUES ($1, $2, $3)
-      RETURNING *
-    `;
-    const result = await db.query(sql, [reportId, note, addedBy]);
-    return result.rows[0];
+    const reportIndex = reports.findIndex(r => r.id === parseInt(reportId));
+    if (reportIndex === -1) return null;
+    
+    if (!reports[reportIndex].notes) {
+      reports[reportIndex].notes = [];
+    }
+    
+    const newNote = {
+      id: Date.now(),
+      reportId: parseInt(reportId),
+      note,
+      addedBy,
+      createdAt: new Date().toISOString()
+    };
+    
+    reports[reportIndex].notes.push(newNote);
+    return newNote;
   },
 
   async getNotes(reportId) {
-    const sql = `
-      SELECT rn.*, u."firstName", u."lastName"
-      FROM report_notes rn
-      LEFT JOIN users u ON rn."addedBy" = u.id
-      WHERE rn."reportId" = $1
-      ORDER BY rn."createdAt" DESC
-    `;
-    const result = await db.query(sql, [reportId]);
-    return result.rows;
+    const report = reports.find(r => r.id === parseInt(reportId));
+    return report?.notes || [];
   },
 
   async count(filters = {}) {
-    let sql = `SELECT COUNT(*) FROM reports WHERE 1=1`;
-    const params = [];
-
+    let filtered = [...reports];
+    
     if (filters.status) {
-      params.push(filters.status);
-      sql += ` AND status = $${params.length}`;
+      filtered = filtered.filter(r => r.status === filters.status);
     }
-
+    
     if (filters.reportType) {
-      params.push(filters.reportType);
-      sql += ` AND "reportType" = $${params.length}`;
+      filtered = filtered.filter(r => r.reportType === filters.reportType);
     }
-
+    
     if (filters.reportedBy) {
-      params.push(filters.reportedBy);
-      sql += ` AND "reportedBy" = $${params.length}`;
+      filtered = filtered.filter(r => r.reportedBy === parseInt(filters.reportedBy));
     }
-
-    const result = await db.query(sql, params);
-    return parseInt(result.rows[0].count);
+    
+    return filtered.length;
   },
 
   async getStats() {
-    const sql = `
-      SELECT 
-        COUNT(*) as total,
-        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
-        COUNT(CASE WHEN status = 'investigating' THEN 1 END) as investigating,
-        COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved,
-        COUNT(CASE WHEN status = 'false_positive' THEN 1 END) as false_positive,
-        COUNT(CASE WHEN "reportType" = 'phishing' THEN 1 END) as phishing,
-        COUNT(CASE WHEN "reportType" = 'spam' THEN 1 END) as spam,
-        COUNT(CASE WHEN "reportType" = 'malware' THEN 1 END) as malware
-      FROM reports
-    `;
-    const result = await db.query(sql);
-    return result.rows[0];
+    return {
+      total: reports.length,
+      pending: reports.filter(r => r.status === 'pending').length,
+      investigating: reports.filter(r => r.status === 'investigating').length,
+      resolved: reports.filter(r => r.status === 'resolved').length,
+      false_positive: reports.filter(r => r.status === 'false_positive').length,
+      phishing: reports.filter(r => r.reportType === 'phishing').length,
+      spam: reports.filter(r => r.reportType === 'spam').length,
+      malware: reports.filter(r => r.reportType === 'malware').length
+    };
   },
 
   async getTrending(limit = 10) {
-    const sql = `
-      SELECT "senderEmail", COUNT(*) as count
-      FROM reports
-      WHERE "createdAt" >= NOW() - INTERVAL '30 days'
-      GROUP BY "senderEmail"
-      ORDER BY count DESC
-      LIMIT $1
-    `;
-    const result = await db.query(sql, [limit]);
-    return result.rows;
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const recentReports = reports.filter(r => new Date(r.createdAt) >= thirtyDaysAgo);
+    
+    const grouped = {};
+    recentReports.forEach(r => {
+      if (r.senderEmail) {
+        grouped[r.senderEmail] = (grouped[r.senderEmail] || 0) + 1;
+      }
+    });
+    
+    return Object.entries(grouped)
+      .map(([senderEmail, count]) => ({ senderEmail, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
   }
 };
 

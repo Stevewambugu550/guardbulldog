@@ -1,30 +1,38 @@
-const db = require('../config/db');
+// In-memory storage for development (no database required)
+let users = [];
+let nextId = 1;
 
 const User = {
   async create(user) {
-    const { name, email, password, role, department } = user;
-    const sql = `INSERT INTO users (name, email, password, role, department) VALUES ($1, $2, $3, $4, $5) RETURNING *`;
-    const params = [name, email, password, role, department];
-    const result = await db.query(sql, params);
-    return result.rows[0];
+    const { firstName, lastName, email, password, role, department } = user;
+    const newUser = {
+      id: nextId++,
+      firstName,
+      lastName,
+      email,
+      password,
+      role: role || 'user',
+      department: department || 'Not Specified',
+      createdAt: new Date().toISOString()
+    };
+    users.push(newUser);
+    return newUser;
   },
 
   async findByEmail(email) {
-    const sql = `SELECT * FROM users WHERE email = $1`;
-    const result = await db.query(sql, [email]);
-    return result.rows[0];
+    return users.find(user => user.email === email);
   },
 
   async findById(id) {
-    const sql = `SELECT * FROM users WHERE id = $1`;
-    const result = await db.query(sql, [id]);
-    return result.rows[0];
+    return users.find(user => user.id === parseInt(id));
   },
 
   async findFirstUser() {
-    const sql = `SELECT * FROM users ORDER BY id ASC LIMIT 1`;
-    const result = await db.query(sql);
-    return result.rows[0];
+    return users[0];
+  },
+  
+  async findAll() {
+    return users;
   }
 };
 

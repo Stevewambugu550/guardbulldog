@@ -50,11 +50,11 @@ This shows the steps when a user reports a suspicious email.
 ```
   User          React SPA       Backend API      Message Queue     Worker Service
    |                |                 |                 |                 |
-   |--Submit Report->|                 |                 |                 |
-   |                |--POST /incidents->|                 |                 |
+   |--Submit Report->|                 |                 |                |
+   |                |--POST /incidents->|                 |               |
    |                |                 |--Publish Msg--->|                 |
    |                |                 |<--Success 200---|                 |
-   |<--Show Success--|                 |                 |                 |
+   |<--Show Success--|                 |                 |                |
    |                |                 |                 |--Deliver Msg--->| 
    |                |                 |                 |                 |--Process...
    |                |                 |                 |                 |--Save to DB
@@ -72,14 +72,14 @@ This shows the steps for a user logging into the system.
 ```
   User          React SPA       Backend API         Database
    |                |                 |                 |
-   |--Enter Credentials->|                 |                 |
-   |                |--POST /login----->|                 |
-   |                |                 |--Find User------>| 
-   |                |                 |<--User Record----| 
+   |--Enter Credentials->|                 |            |
+   |                |--POST /login----->|               |
+   |                |                 |--Find User------ 
+   |                |                 |<--User Record---| 
    |                |                 |--Verify Passwd--| 
    |                |                 | (Success)       |
    |                |                 |--Generate JWT---| 
-   |                |<--Token----------|                 |
+   |                |<--Token----------|                |
    |--Redirect------|                 |                 |
    |                |                 |                 |
 
