@@ -33,6 +33,47 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadsDir));
 
 // Define Routes
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>GuardBulldog API</title>
+      <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .container { background: rgba(255,255,255,0.1); padding: 40px; border-radius: 20px; backdrop-filter: blur(10px); }
+        h1 { font-size: 3em; margin: 0; }
+        .status { color: #4ade80; font-size: 1.2em; margin: 20px 0; }
+        .endpoints { background: rgba(0,0,0,0.2); padding: 20px; border-radius: 10px; margin: 20px 0; }
+        .endpoint { margin: 10px 0; font-family: monospace; }
+        a { color: #60a5fa; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>🛡️ GuardBulldog API</h1>
+        <p class="status">✅ API Server Running Successfully</p>
+        <p>This is the backend API for the GuardBulldog Phishing Protection Platform.</p>
+        
+        <div class="endpoints">
+          <h3>Available Endpoints:</h3>
+          <div class="endpoint">GET /api/health - Health check</div>
+          <div class="endpoint">POST /api/auth/register - User registration</div>
+          <div class="endpoint">POST /api/auth/login - User login</div>
+          <div class="endpoint">POST /api/reports - Submit report</div>
+          <div class="endpoint">POST /api/guest/submit - Guest report submission</div>
+          <div class="endpoint">GET /api/education/modules - Education modules</div>
+        </div>
+        
+        <p><strong>Frontend Website:</strong> <a href="https://guardbulldog.netlify.app">https://guardbulldog.netlify.app</a></p>
+        <p><strong>GitHub:</strong> <a href="https://github.com/Stevewambugu550/guardbulldog">View Repository</a></p>
+      </div>
+    </body>
+    </html>
+  `);
+});
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'GUARDBULLDOG API is running' });
 });
