@@ -11,6 +11,16 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CLIENT_URL
-        value: https://guardbulldog.netlify.app
+        value: https://guardbulldog-frontend.onrender.com
       - key: PORT
         value: 5000
+
+  # Frontend
+  - type: web
+    name: guardbulldog-frontend
+    env: static
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: ./client/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://guardbulldog-api.onrender.com
