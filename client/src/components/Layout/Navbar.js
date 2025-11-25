@@ -8,17 +8,82 @@ import {
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  HomeIcon,
+  ExclamationTriangleIcon,
+  AcademicCapIcon,
+  ShieldCheckIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
 const Navbar = ({ onMobileMenuToggle, isMobileMenuOpen }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [bellAnimation, setBellAnimation] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const userMenuRef = useRef(null);
   const notificationRef = useRef(null);
+
+  // Generate dynamic notifications
+  useEffect(() => {
+    const generateNotifications = () => {
+      const now = new Date();
+      const types = [
+        { icon: '🚨', title: 'Phishing Alert', messages: ['New phishing campaign targeting students', 'Suspicious email detected from fake IT support', 'Credential harvesting attempt blocked'] },
+        { icon: '🛡️', title: 'Security Update', messages: ['Your account security was verified', 'Password protection is active', 'Two-factor authentication reminder'] },
+        { icon: '📚', title: 'Training', messages: ['New module available: Advanced Threats', 'Complete your phishing awareness training', 'Quiz reminder: Social Engineering'] },
+        { icon: '✅', title: 'Report Update', messages: ['Your report #456 has been resolved', 'Thank you for reporting - threat confirmed', 'Investigation complete on your submission'] },
+      ];
+      
+      return [
+        { id: 1, icon: '🚨', type: 'alert', title: 'Active Phishing Campaign', message: 'Be cautious of emails claiming to be from IT Support', time: formatTime(new Date(now - 1000 * 60 * 5)), unread: true },
+        { id: 2, icon: '📚', type: 'training', title: 'Training Reminder', message: 'You have 3 incomplete security modules', time: formatTime(new Date(now - 1000 * 60 * 30)), unread: true },
+        { id: 3, icon: '✅', type: 'success', title: 'Report Resolved', message: 'Your phishing report was confirmed & blocked', time: formatTime(new Date(now - 1000 * 60 * 60 * 2)), unread: true },
+        { id: 4, icon: '🛡️', type: 'info', title: 'Security Tip', message: 'Always verify sender email addresses', time: formatTime(new Date(now - 1000 * 60 * 60 * 5)), unread: false },
+      ];
+    };
+
+    const formatTime = (date) => {
+      const now = new Date();
+      const diff = now - date;
+      if (diff < 60000) return 'Just now';
+      if (diff < 3600000) return `${Math.floor(diff / 60000)} min ago`;
+      if (diff < 86400000) return `${Math.floor(diff / 3600000)} hours ago`;
+      return 'Yesterday';
+    };
+
+    setNotifications(generateNotifications());
+
+    // Add new notifications periodically
+    const interval = setInterval(() => {
+      const newAlerts = [
+        { icon: '🚨', title: 'New Threat Detected', message: 'Suspicious link blocked from your email' },
+        { icon: '📊', title: 'Weekly Report', message: 'Your security summary is ready' },
+        { icon: '⚡', title: 'Quick Alert', message: 'New phishing pattern identified' },
+        { icon: '🎓', title: 'Course Update', message: 'New content added to training modules' },
+      ];
+      const random = newAlerts[Math.floor(Math.random() * newAlerts.length)];
+      
+      setNotifications(prev => [{
+        id: Date.now(),
+        icon: random.icon,
+        type: 'new',
+        title: random.title,
+        message: random.message,
+        time: 'Just now',
+        unread: true
+      }, ...prev.slice(0, 4)]);
+      
+      // Animate bell
+      setBellAnimation(true);
+      setTimeout(() => setBellAnimation(false), 1000);
+    }, 45000); // Every 45 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -50,31 +115,11 @@ const Navbar = ({ onMobileMenuToggle, isMobileMenuOpen }) => {
     }
   };
 
-  const mockNotifications = [
-    {
-      id: 1,
-      title: 'New Phishing Report',
-      message: 'A new suspicious email has been reported',
-      time: '5 minutes ago',
-      unread: true
-    },
-    {
-      id: 2,
-      title: 'Security Alert',
-      message: 'Unusual login activity detected',
-      time: '1 hour ago',
-      unread: true
-    },
-    {
-      id: 3,
-      title: 'Training Complete',
-      message: 'Email Security Basics module completed',
-      time: '2 hours ago',
-      unread: false
-    }
-  ];
+  const markAllRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+  };
 
-  const unreadCount = mockNotifications.filter(n => n.unread).length;
+  const unreadCount = notifications.filter(n => n.unread).length;
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-[9999]">
@@ -114,10 +159,17 @@ const Navbar = ({ onMobileMenuToggle, isMobileMenuOpen }) => {
             {/* Quick Actions - Hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-2">
               <Link
-                to="/app/report-phishing"
-                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                to="/"
+                className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
               >
-                Report Phishing
+                <HomeIcon className="h-4 w-4 mr-1" />
+                Home
+              </Link>
+              <Link
+                to="/app/report-phishing"
+                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-sm hover:shadow-md transition-all"
+              >
+                🚨 Report Phishing
               </Link>
             </div>
 
@@ -125,41 +177,77 @@ const Navbar = ({ onMobileMenuToggle, isMobileMenuOpen }) => {
             <div className="relative" ref={notificationRef}>
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-full relative transition-colors"
+                className={`p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full relative transition-all ${bellAnimation ? 'animate-bounce' : ''}`}
               >
-                <BellIcon className="h-6 w-6" />
+                <BellIcon className={`h-6 w-6 ${bellAnimation ? 'text-blue-600' : ''}`} />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 block h-4 w-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                    {unreadCount}
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-xs items-center justify-center font-bold">
+                      {unreadCount}
+                    </span>
                   </span>
                 )}
               </button>
 
               {showNotifications && (
-                <div className="origin-top-right absolute right-0 mt-2 w-80 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-                  <div className="p-4">
-                    <h3 className="text-sm font-medium text-gray-900 mb-3">Notifications</h3>
-                    <div className="space-y-3 max-h-64 overflow-y-auto">
-                      {mockNotifications.map((notification) => (
-                        <div key={notification.id} className={`p-3 rounded-lg border ${notification.unread ? 'bg-yellow-50 border-yellow-200' : 'bg-gray-50 border-gray-200'}`}>
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900">{notification.title}</p>
-                              <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                              <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
-                            </div>
-                            {notification.unread && (
-                              <div className="w-2 h-2 bg-secondary rounded-full ml-2 mt-1"></div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <button className="text-sm text-secondary hover:text-primary font-medium">
-                        View all notifications
+                <div className="origin-top-right absolute right-0 mt-2 w-96 rounded-xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-white flex items-center">
+                        <BellIcon className="h-5 w-5 mr-2" />
+                        Notifications
+                        {unreadCount > 0 && (
+                          <span className="ml-2 bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">
+                            {unreadCount} new
+                          </span>
+                        )}
+                      </h3>
+                      <button 
+                        onClick={markAllRead}
+                        className="text-xs text-blue-100 hover:text-white transition"
+                      >
+                        Mark all read
                       </button>
                     </div>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-8 text-center text-gray-500">
+                        <BellIcon className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                        <p>No notifications yet</p>
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <div 
+                          key={notification.id} 
+                          className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer ${notification.unread ? 'bg-blue-50/50' : ''}`}
+                        >
+                          <div className="flex items-start">
+                            <span className="text-2xl mr-3">{notification.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <p className="text-sm font-semibold text-gray-900 truncate">{notification.title}</p>
+                                {notification.unread && (
+                                  <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 mt-0.5">{notification.message}</p>
+                              <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="bg-gray-50 px-4 py-3 border-t border-gray-100">
+                    <Link 
+                      to="/app/dashboard" 
+                      className="block text-center text-sm text-blue-600 hover:text-blue-800 font-medium"
+                      onClick={() => setShowNotifications(false)}
+                    >
+                      View all notifications →
+                    </Link>
                   </div>
                 </div>
               )}
@@ -191,6 +279,14 @@ const Navbar = ({ onMobileMenuToggle, isMobileMenuOpen }) => {
                       <p className="text-sm text-gray-500">{user?.email}</p>
                       <p className="text-xs text-gray-400 capitalize mt-1">{user?.role?.replace('_', ' ')} • {user?.department}</p>
                     </div>
+                    <Link
+                      to="/"
+                      className="flex items-center px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <HomeIcon className="h-4 w-4 mr-3 text-blue-500" />
+                      🏠 Back to Home
+                    </Link>
                     <Link
                       to="/app/profile"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
