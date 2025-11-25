@@ -110,26 +110,41 @@ exports.register = async (req, res) => {
   }
 };
 
-// Login user - Simple direct login (no verification code)
+// Login user - Supports email OR phone number
 exports.login = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { email, password } = req.body;
+  const { email, phone, identifier, password } = req.body;
+  
+  // Support multiple login methods: email, phone, or identifier (either)
+  const loginIdentifier = identifier || email || phone;
 
   try {
-    // Find user by email
-    const user = await User.findByEmail(email);
+    // Find user by email or phone
+    let user = null;
+    
+    // Check if it looks like an email (contains @)
+    if (loginIdentifier && loginIdentifier.includes('@')) {
+      user = await User.findByEmail(loginIdentifier);
+    } else if (loginIdentifier) {
+      // Try to find by phone first, then by email
+      user = await User.findByPhone(loginIdentifier);
+      if (!user) {
+        user = await User.findByEmail(loginIdentifier);
+      }
+    }
+    
     if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: 'Invalid credentials. User not found.' });
     }
 
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: 'Invalid credentials. Wrong password.' });
     }
 
     // Generate JWT token

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, EnvelopeIcon, PhoneIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 
 const Login = () => {
+  const [loginMethod, setLoginMethod] = useState('email'); // 'email' or 'phone'
   const [formData, setFormData] = useState({
-    email: '',
+    identifier: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -31,7 +32,9 @@ const Login = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.email) newErrors.email = 'Email is required';
+    if (!formData.identifier) {
+      newErrors.identifier = loginMethod === 'email' ? 'Email is required' : 'Phone number is required';
+    }
     if (!formData.password) newErrors.password = 'Password is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -42,7 +45,7 @@ const Login = () => {
     if (!validateForm()) return;
 
     setLoading(true);
-    const result = await login(formData.email, formData.password);
+    const result = await login(formData.identifier, formData.password);
     if (result.success) {
       navigate('/app/dashboard');
     }
@@ -68,23 +71,54 @@ const Login = () => {
         {/* Form Card */}
         <div className="card card-hover">
           <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* Login Method Toggle */}
+            <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
+              <button
+                type="button"
+                onClick={() => { setLoginMethod('email'); setFormData({...formData, identifier: ''}); }}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium flex items-center justify-center transition ${
+                  loginMethod === 'email' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <EnvelopeIcon className="h-4 w-4 mr-2" />
+                Email
+              </button>
+              <button
+                type="button"
+                onClick={() => { setLoginMethod('phone'); setFormData({...formData, identifier: ''}); }}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium flex items-center justify-center transition ${
+                  loginMethod === 'phone' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <PhoneIcon className="h-4 w-4 mr-2" />
+                Phone
+              </button>
+            </div>
+
             <div className="space-y-4">
               <div>
-                <label htmlFor="email-address" className="block text-sm font-semibold text-gray-700 mb-2" style={{fontFamily: 'Rajdhani'}}>
-                  Email Address
+                <label htmlFor="identifier" className="block text-sm font-semibold text-gray-700 mb-2" style={{fontFamily: 'Rajdhani'}}>
+                  {loginMethod === 'email' ? 'Email Address' : 'Phone Number'}
                 </label>
-                <input
-                  id="email-address"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className={`w-full px-4 py-3 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
-                  placeholder="student@bowie.edu"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                <div className="relative">
+                  {loginMethod === 'email' ? (
+                    <EnvelopeIcon className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  ) : (
+                    <PhoneIcon className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  )}
+                  <input
+                    id="identifier"
+                    name="identifier"
+                    type={loginMethod === 'email' ? 'email' : 'tel'}
+                    autoComplete={loginMethod === 'email' ? 'email' : 'tel'}
+                    required
+                    className={`w-full pl-10 pr-4 py-3 border ${errors.identifier ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
+                    placeholder={loginMethod === 'email' ? 'student@bowie.edu' : '+1 (301) 860-0000'}
+                    value={formData.identifier}
+                    onChange={handleChange}
+                  />
+                </div>
+                {errors.identifier && <p className="text-red-500 text-xs mt-1">{errors.identifier}</p>}
               </div>
               <div className="relative">
                 <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2" style={{fontFamily: 'Rajdhani'}}>

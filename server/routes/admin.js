@@ -20,6 +20,16 @@ router.get('/reports', [auth, admin], adminController.getAllReports);
 // @access  Private (Admin) - simplified auth for now
 router.get('/users', adminController.getAllUsers);
 
+// @route   POST api/admin/users
+// @desc    Add new user (Admin)
+// @access  Private (Admin)
+router.post('/users', [auth, admin], adminController.addUser);
+
+// @route   DELETE api/admin/users/:userId
+// @desc    Delete user (Admin)
+// @access  Private (Admin)
+router.delete('/users/:userId', [auth, admin], adminController.deleteUser);
+
 // @route   PUT api/admin/users/:userId/role
 // @desc    Update user role
 // @access  Private (Admin)

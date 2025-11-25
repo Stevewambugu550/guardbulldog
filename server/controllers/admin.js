@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Report = require('../models/Report');
+const bcrypt = require('bcryptjs');
 
 // Get dashboard statistics
 exports.getDashboardStats = async (req, res) => {
@@ -83,6 +84,66 @@ exports.getAllUsers = async (req, res) => {
     });
   } catch (err) {
     console.error('Get all users error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Add new user (Admin)
+exports.addUser = async (req, res) => {
+  try {
+    const { firstName, lastName, email, phone, password, role, department } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findByEmail(email);
+    if (existingUser) {
+      return res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create user
+    const newUser = await User.create({
+      firstName,
+      lastName,
+      email,
+      phone: phone || null,
+      password: hashedPassword,
+      role: role || 'user',
+      department: department || null
+    });
+
+    const { password: _, ...userWithoutPassword } = newUser;
+    res.status(201).json({ 
+      message: 'User created successfully', 
+      user: userWithoutPassword 
+    });
+  } catch (err) {
+    console.error('Add user error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Delete user (Admin)
+exports.deleteUser = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    // Prevent deleting yourself
+    if (parseInt(userId) === req.user.id) {
+      return res.status(400).json({ message: 'You cannot delete yourself' });
+    }
+
+    const deleted = await User.delete(userId);
+    
+    if (!deleted) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ message: 'User deleted successfully' });
+  } catch (err) {
+    console.error('Delete user error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };

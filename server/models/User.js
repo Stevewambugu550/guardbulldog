@@ -23,10 +23,10 @@ setTimeout(createDefaultAdmin, 2000);
 
 const User = {
   async create(user) {
-    const { firstName, lastName, email, password, role, department } = user;
+    const { firstName, lastName, email, phone, password, role, department } = user;
     const result = await pool.query(
-      `INSERT INTO users ("firstName", "lastName", email, password, role, department) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [firstName, lastName, email, password, role || 'student', department || 'Not Specified']
+      `INSERT INTO users ("firstName", "lastName", email, phone, password, role, department) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [firstName, lastName, email, phone || null, password, role || 'student', department || 'Not Specified']
     );
     console.log('✅ User created:', email);
     return result.rows[0];
@@ -34,6 +34,16 @@ const User = {
 
   async findByEmail(email) {
     const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    return result.rows[0];
+  },
+
+  async findByPhone(phone) {
+    const result = await pool.query('SELECT * FROM users WHERE phone = $1', [phone]);
+    return result.rows[0];
+  },
+
+  async findByEmailOrPhone(identifier) {
+    const result = await pool.query('SELECT * FROM users WHERE email = $1 OR phone = $1', [identifier]);
     return result.rows[0];
   },
 
@@ -79,6 +89,33 @@ const User = {
       return result.rows[0];
     } catch (err) {
       console.log('Update role error:', err.message);
+      return null;
+    }
+  },
+
+  async delete(userId) {
+    try {
+      const result = await pool.query(
+        'DELETE FROM users WHERE id = $1 RETURNING *',
+        [userId]
+      );
+      return result.rows[0];
+    } catch (err) {
+      console.log('Delete user error:', err.message);
+      return null;
+    }
+  },
+
+  async update(userId, updates) {
+    try {
+      const { firstName, lastName, email, phone, department } = updates;
+      const result = await pool.query(
+        'UPDATE users SET "firstName" = COALESCE($1, "firstName"), "lastName" = COALESCE($2, "lastName"), email = COALESCE($3, email), phone = COALESCE($4, phone), department = COALESCE($5, department) WHERE id = $6 RETURNING *',
+        [firstName, lastName, email, phone, department, userId]
+      );
+      return result.rows[0];
+    } catch (err) {
+      console.log('Update user error:', err.message);
       return null;
     }
   }
