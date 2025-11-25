@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, KeyIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
+    verificationCode: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [requiresVerification, setRequiresVerification] = useState(false);
+  const [savedEmail, setSavedEmail] = useState('');
 
-  const { login } = useAuth();
+  const { login, resendCode } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -21,7 +24,6 @@ const Login = () => {
       ...prev,
       [name]: value
     }));
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -35,10 +37,14 @@ const Login = () => {
 
     if (!formData.email) {
       newErrors.email = 'Email is required';
-        }
+    }
 
     if (!formData.password) {
       newErrors.password = 'Password is required';
+    }
+
+    if (requiresVerification && !formData.verificationCode) {
+      newErrors.verificationCode = 'Verification code is required';
     }
 
     setErrors(newErrors);
@@ -51,11 +57,25 @@ const Login = () => {
     if (!validateForm()) return;
 
     setLoading(true);
-    const result = await login(formData.email, formData.password);
+    
+    const result = await login(
+      formData.email, 
+      formData.password, 
+      requiresVerification ? formData.verificationCode : null
+    );
     
     if (result.success) {
       navigate('/app/dashboard');
+    } else if (result.requiresVerification) {
+      setRequiresVerification(true);
+      setSavedEmail(result.email);
     }
+    setLoading(false);
+  };
+
+  const handleResendCode = async () => {
+    setLoading(true);
+    await resendCode(savedEmail || formData.email);
     setLoading(false);
   };
 
@@ -124,6 +144,37 @@ const Login = () => {
                 </button>
                 {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
               </div>
+
+              {/* Verification Code Field */}
+              {requiresVerification && (
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="flex items-center mb-3">
+                    <KeyIcon className="h-5 w-5 text-blue-600 mr-2" />
+                    <span className="text-sm font-semibold text-blue-800">Verification Code Sent!</span>
+                  </div>
+                  <p className="text-xs text-blue-600 mb-3">
+                    Check your email ({savedEmail || formData.email}) for the 6-digit code.
+                  </p>
+                  <input
+                    name="verificationCode"
+                    type="text"
+                    maxLength="6"
+                    className={`w-full px-4 py-3 border ${errors.verificationCode ? 'border-red-500' : 'border-blue-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-2xl tracking-widest font-bold`}
+                    placeholder="000000"
+                    value={formData.verificationCode}
+                    onChange={handleChange}
+                  />
+                  {errors.verificationCode && <p className="text-red-500 text-xs mt-1">{errors.verificationCode}</p>}
+                  <button
+                    type="button"
+                    onClick={handleResendCode}
+                    disabled={loading}
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Resend Code
+                  </button>
+                </div>
+              )}
             </div>
 
             <button

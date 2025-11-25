@@ -30,6 +30,11 @@ router.post(
   authController.login
 );
 
+// @route   POST api/auth/resend-code
+// @desc    Resend verification code
+// @access  Public
+router.post('/resend-code', authController.resendCode);
+
 // @route   GET api/auth/verify
 // @desc    Verify token and get current user
 // @access  Private
