@@ -1,9 +1,13 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const pool = require('./config/database');
 
-// NO DATABASE - Using in-memory storage
-console.log('🚀 Starting GuardBulldog API with in-memory storage...');
+// Connect to Neon Database
+console.log('🚀 Starting GuardBulldog API with Neon Database...');
+pool.query('SELECT NOW()')
+  .then(() => console.log('✅ Neon Database connected!'))
+  .catch(err => console.log('⚠️ Database error:', err.message));
 
 const app = express();
 const fs = require('fs');

@@ -1,9 +1,10 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+// Neon Database Connection
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://localhost/guardbulldog',
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_EFgeuMKSqk98@ep-polished-scene-ah90agqp-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require',
+  ssl: { rejectUnauthorized: false }
 });
 
 // Initialize database tables

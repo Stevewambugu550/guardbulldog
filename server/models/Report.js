@@ -1,84 +1,56 @@
-// In-memory storage - NO DATABASE REQUIRED
-let reports = [];
-let nextId = 1;
+const pool = require('../config/database');
 
 const Report = {
   async create(report) {
-    const { reportedBy, emailSubject, senderEmail, emailBody, reportType, suspiciousLinks, attachments, ipAddress } = report;
-    const newReport = {
-      id: nextId++,
-      reportedBy,
-      emailSubject,
-      senderEmail,
-      emailBody,
-      reportType,
-      suspiciousLinks,
-      attachments,
-      ipAddress,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    reports.push(newReport);
-    console.log('✅ Report created:', newReport.id);
-    return newReport;
+    const { reportedBy, emailSubject, senderEmail, emailBody, reportType, suspiciousLinks, ipAddress } = report;
+    try {
+      const result = await pool.query(
+        `INSERT INTO reports ("reportedBy", subject, "senderEmail", "emailBody", "reportType", "suspiciousUrls", "ipAddress", status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending') RETURNING *`,
+        [reportedBy, emailSubject, senderEmail, emailBody, reportType, JSON.stringify(suspiciousLinks || []), ipAddress]
+      );
+      return result.rows[0];
+    } catch (err) {
+      console.error('Report create error:', err.message);
+      throw err;
+    }
   },
 
   async findById(id) {
-    return reports.find(r => r.id === parseInt(id));
+    const result = await pool.query('SELECT * FROM reports WHERE id = $1', [id]);
+    return result.rows[0];
   },
 
-  async findByUserId(userId, filters = {}) {
-    let userReports = reports.filter(r => r.reportedBy === parseInt(userId));
-    if (filters.status) userReports = userReports.filter(r => r.status === filters.status);
-    if (filters.reportType) userReports = userReports.filter(r => r.reportType === filters.reportType);
-    userReports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    if (filters.limit) userReports = userReports.slice(0, filters.limit);
-    return userReports;
+  async findByUserId(userId) {
+    const result = await pool.query('SELECT * FROM reports WHERE "reportedBy" = $1 ORDER BY "createdAt" DESC', [userId]);
+    return result.rows;
   },
 
-  async findAll(filters = {}) {
-    let allReports = [...reports];
-    if (filters.status) allReports = allReports.filter(r => r.status === filters.status);
-    if (filters.reportType) allReports = allReports.filter(r => r.reportType === filters.reportType);
-    allReports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    if (filters.limit) allReports = allReports.slice(0, filters.limit);
-    return allReports;
+  async findAll() {
+    const result = await pool.query('SELECT * FROM reports ORDER BY "createdAt" DESC');
+    return result.rows;
   },
 
   async updateStatus(id, status) {
-    const report = reports.find(r => r.id === parseInt(id));
-    if (report) {
-      report.status = status;
-      report.updatedAt = new Date().toISOString();
-    }
-    return report;
+    const result = await pool.query('UPDATE reports SET status = $1 WHERE id = $2 RETURNING *', [status, id]);
+    return result.rows[0];
   },
 
-  async count(filters = {}) {
-    let filtered = [...reports];
-    if (filters.status) filtered = filtered.filter(r => r.status === filters.status);
-    if (filters.reportType) filtered = filtered.filter(r => r.reportType === filters.reportType);
-    if (filters.reportedBy) filtered = filtered.filter(r => r.reportedBy === parseInt(filters.reportedBy));
-    return filtered.length;
+  async count() {
+    const result = await pool.query('SELECT COUNT(*) FROM reports');
+    return parseInt(result.rows[0].count);
   },
 
   async getStats() {
-    return {
-      total: reports.length,
-      pending: reports.filter(r => r.status === 'pending').length,
-      investigating: reports.filter(r => r.status === 'investigating').length,
-      resolved: reports.filter(r => r.status === 'resolved').length,
-      phishing: reports.filter(r => r.reportType === 'phishing').length,
-      spam: reports.filter(r => r.reportType === 'spam').length,
-      malware: reports.filter(r => r.reportType === 'malware').length
-    };
+    try {
+      const result = await pool.query('SELECT COUNT(*) as total FROM reports');
+      return { total: parseInt(result.rows[0].total), pending: 0, resolved: 0 };
+    } catch {
+      return { total: 0, pending: 0, resolved: 0 };
+    }
   },
 
-  async getTrending(limit = 10) {
-    return [];
-  },
-
+  async getTrending() { return []; },
   async addNote() { return { success: true }; },
   async getNotes() { return []; }
 };

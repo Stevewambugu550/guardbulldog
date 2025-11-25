@@ -1,61 +1,55 @@
-// In-memory storage - NO DATABASE REQUIRED
+const pool = require('../config/database');
 const bcrypt = require('bcryptjs');
 
-let users = [];
-let nextId = 1;
-
-// Create default admin user on startup
+// Create default admin on startup
 const createDefaultAdmin = async () => {
-  const adminExists = users.find(u => u.email === 'admin@bowiestate.edu');
-  if (!adminExists) {
-    const hashedPassword = await bcrypt.hash('Admin@2024', 10);
-    users.push({
-      id: nextId++,
-      firstName: 'Admin',
-      lastName: 'GuardBulldog',
-      email: 'admin@bowiestate.edu',
-      password: hashedPassword,
-      role: 'admin',
-      department: 'IT Security',
-      createdAt: new Date().toISOString()
-    });
-    console.log('✅ Default admin created: admin@bowiestate.edu / Admin@2024');
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', ['admin@bowiestate.edu']);
+    if (result.rows.length === 0) {
+      const hashedPassword = await bcrypt.hash('Admin@2024', 10);
+      await pool.query(
+        `INSERT INTO users ("firstName", "lastName", email, password, role, department) VALUES ($1, $2, $3, $4, $5, $6)`,
+        ['Admin', 'GuardBulldog', 'admin@bowiestate.edu', hashedPassword, 'admin', 'IT Security']
+      );
+      console.log('✅ Default admin created: admin@bowiestate.edu / Admin@2024');
+    }
+  } catch (err) {
+    console.log('Admin creation skipped:', err.message);
   }
 };
-createDefaultAdmin();
+
+// Initialize after 2 seconds (wait for tables)
+setTimeout(createDefaultAdmin, 2000);
 
 const User = {
   async create(user) {
     const { firstName, lastName, email, password, role, department } = user;
-    const newUser = {
-      id: nextId++,
-      firstName,
-      lastName,
-      email,
-      password,
-      role: role || 'student',
-      department: department || 'Not Specified',
-      createdAt: new Date().toISOString()
-    };
-    users.push(newUser);
+    const result = await pool.query(
+      `INSERT INTO users ("firstName", "lastName", email, password, role, department) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [firstName, lastName, email, password, role || 'student', department || 'Not Specified']
+    );
     console.log('✅ User created:', email);
-    return newUser;
+    return result.rows[0];
   },
 
   async findByEmail(email) {
-    return users.find(user => user.email === email);
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    return result.rows[0];
   },
 
   async findById(id) {
-    return users.find(user => user.id === parseInt(id));
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+    return result.rows[0];
   },
 
   async findFirstUser() {
-    return users[0];
+    const result = await pool.query('SELECT * FROM users LIMIT 1');
+    return result.rows[0];
   },
   
   async findAll() {
-    return users;
+    const result = await pool.query('SELECT * FROM users ORDER BY "createdAt" DESC');
+    return result.rows;
   }
 };
 
