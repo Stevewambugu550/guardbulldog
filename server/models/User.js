@@ -1,66 +1,61 @@
-const pool = require('../config/database');
+// In-memory storage - NO DATABASE REQUIRED
+const bcrypt = require('bcryptjs');
+
+let users = [];
+let nextId = 1;
+
+// Create default admin user on startup
+const createDefaultAdmin = async () => {
+  const adminExists = users.find(u => u.email === 'admin@bowiestate.edu');
+  if (!adminExists) {
+    const hashedPassword = await bcrypt.hash('Admin@2024', 10);
+    users.push({
+      id: nextId++,
+      firstName: 'Admin',
+      lastName: 'GuardBulldog',
+      email: 'admin@bowiestate.edu',
+      password: hashedPassword,
+      role: 'admin',
+      department: 'IT Security',
+      createdAt: new Date().toISOString()
+    });
+    console.log('✅ Default admin created: admin@bowiestate.edu / Admin@2024');
+  }
+};
+createDefaultAdmin();
 
 const User = {
   async create(user) {
     const { firstName, lastName, email, password, role, department } = user;
-    
-    try {
-      const result = await pool.query(
-        `INSERT INTO users ("firstName", "lastName", email, password, role, department)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [firstName, lastName, email, password, role || 'student', department || 'Not Specified']
-      );
-      return result.rows[0];
-    } catch (error) {
-      console.error('Error creating user:', error);
-      throw error;
-    }
+    const newUser = {
+      id: nextId++,
+      firstName,
+      lastName,
+      email,
+      password,
+      role: role || 'student',
+      department: department || 'Not Specified',
+      createdAt: new Date().toISOString()
+    };
+    users.push(newUser);
+    console.log('✅ User created:', email);
+    return newUser;
   },
 
   async findByEmail(email) {
-    try {
-      const result = await pool.query(
-        'SELECT * FROM users WHERE email = $1',
-        [email]
-      );
-      return result.rows[0];
-    } catch (error) {
-      console.error('Error finding user by email:', error);
-      return null;
-    }
+    return users.find(user => user.email === email);
   },
 
   async findById(id) {
-    try {
-      const result = await pool.query(
-        'SELECT * FROM users WHERE id = $1',
-        [id]
-      );
-      return result.rows[0];
-    } catch (error) {
-      console.error('Error finding user by id:', error);
-      return null;
-    }
+    return users.find(user => user.id === parseInt(id));
   },
 
   async findFirstUser() {
-    try {
-      const result = await pool.query('SELECT * FROM users LIMIT 1');
-      return result.rows[0];
-    } catch (error) {
-      console.error('Error finding first user:', error);
-      return null;
-    }
+    return users[0];
   },
   
   async findAll() {
-    try {
-      const result = await pool.query('SELECT * FROM users ORDER BY "createdAt" DESC');
-      return result.rows;
-    } catch (error) {
-      console.error('Error finding all users:', error);
-      return [];
-    }
+    return users;
   }
 };
 
