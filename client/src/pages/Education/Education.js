@@ -53,8 +53,11 @@ const Education = () => {
   };
 
   const isModuleCompleted = (moduleId) => {
-    return progress?.progress?.completedModules?.some(cm => cm.moduleId === moduleId);
+    return progress?.progress?.completedModules?.some(cm => cm.moduleId === moduleId || cm.moduleId === String(moduleId));
   };
+
+  // Handle both id and _id from different backends
+  const getModuleId = (module) => module.id || module._id;
 
   if (isLoading) {
     return <LoadingSpinner text="Loading education modules..." />;
@@ -126,7 +129,7 @@ const Education = () => {
             {progress.recommended.map((module) => (
               <Link
                 key={module._id}
-                to={`/education/modules/${module._id}`}
+                to={`/app/education/${getModuleId(module)}`}
                 className="card hover:shadow-md transition-shadow group"
               >
                 <div className="flex items-start justify-between mb-3">
@@ -144,7 +147,7 @@ const Education = () => {
                 <div className="flex items-center justify-between text-sm text-gray-500">
                   <div className="flex items-center">
                     <ClockIcon className="h-4 w-4 mr-1" />
-                    {module.estimatedTime} min
+                    {module.duration || module.estimatedTime || 15} min
                   </div>
                   <div className="flex items-center text-blue-600">
                     <PlayIcon className="h-4 w-4 mr-1" />
@@ -191,11 +194,12 @@ const Education = () => {
         {modules && modules.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {modules.map((module) => {
-              const completed = isModuleCompleted(module._id);
+              const moduleId = getModuleId(module);
+              const completed = isModuleCompleted(moduleId);
               return (
                 <Link
-                  key={module._id}
-                  to={`/education/modules/${module._id}`}
+                  key={moduleId}
+                  to={`/app/education/${moduleId}`}
                   className="card hover:shadow-md transition-shadow group relative"
                 >
                   {completed && (
