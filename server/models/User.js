@@ -1,6 +1,30 @@
 // In-memory storage for development (no database required)
+const bcrypt = require('bcryptjs');
+
 let users = [];
 let nextId = 1;
+
+// Create default admin user
+const createDefaultAdmin = async () => {
+  const adminExists = users.find(u => u.email === 'admin@bowiestate.edu');
+  if (!adminExists) {
+    const hashedPassword = await bcrypt.hash('Admin@2024', 10);
+    users.push({
+      id: nextId++,
+      firstName: 'Admin',
+      lastName: 'GuardBulldog',
+      email: 'admin@bowiestate.edu',
+      password: hashedPassword,
+      role: 'admin',
+      department: 'IT Security',
+      createdAt: new Date().toISOString()
+    });
+    console.log('✅ Default admin user created: admin@bowiestate.edu / Admin@2024');
+  }
+};
+
+// Create admin on startup
+createDefaultAdmin();
 
 const User = {
   async create(user) {

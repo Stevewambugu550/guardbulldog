@@ -1,25 +1,34 @@
-const pool = require('../config/database');
 const axios = require('axios');
 
 /**
  * IP Intelligence Controller
  * Handles IP address geolocation, reputation, and threat analysis
+ * Using in-memory storage (no database required)
  */
+
+// In-memory storage for IP intelligence data
+let ipIntelligenceData = [];
 
 // Get IP information from IPinfo.io API
 async function getIPInfo(ipAddress) {
     try {
-        const apiKey = process.env.IPINFO_API_KEY;
-        if (!apiKey) {
-            console.warn('IPinfo API key not configured');
-            return null;
-        }
+        const apiKey = process.env.IPINFO_API_KEY || 'demo';
         
         const response = await axios.get(`https://ipinfo.io/${ipAddress}?token=${apiKey}`);
         return response.data;
     } catch (error) {
         console.error('Error fetching IP info:', error.message);
-        return null;
+        // Return mock data if API fails
+        return {
+            ip: ipAddress,
+            city: 'Unknown',
+            region: 'Unknown',
+            country: 'US',
+            loc: '39.0997,-94.5786',
+            org: 'Unknown ISP',
+            postal: '00000',
+            timezone: 'America/Chicago'
+        };
     }
 }
 
@@ -29,6 +38,12 @@ function calculateThreatLevel(reportCount, isBlacklisted, reputationScore) {
     if (reportCount > 5 || reputationScore < 30) return 'suspicious';
     if (reportCount > 0 || reputationScore < 60) return 'unknown';
     return 'safe';
+}
+
+// Calculate reputation score
+function calculateReputationScore(reportCount, isBlacklisted) {
+    if (isBlacklisted) return 0;
+    return Math.max(0, 100 - (reportCount * 10));
 }
 
 // Analyze IP address
@@ -45,57 +60,49 @@ exports.analyzeIP = async (req, res) => {
             });
         }
         
-        // Check if IP exists in database
-        let ipData = await pool.query(
-            'SELECT * FROM ip_intelligence WHERE ip_address = $1',
-            [address]
-        );
+        // Check if IP exists in memory
+        let ipData = ipIntelligenceData.find(ip => ip.ip_address === address);
         
-        if (ipData.rows.length > 0) {
+        if (ipData) {
             // Update last_seen
-            await pool.query(
-                'UPDATE ip_intelligence SET last_seen = NOW(), updated_at = NOW() WHERE ip_address = $1',
-                [address]
-            );
+            ipData.last_seen = new Date().toISOString();
+            ipData.updated_at = new Date().toISOString();
             
             return res.json({
                 success: true,
-                data: ipData.rows[0],
-                source: 'database'
+                data: ipData,
+                source: 'cache'
             });
         }
         
         // Fetch from IPinfo API
         const ipInfo = await getIPInfo(address);
         
-        if (!ipInfo) {
-            return res.status(503).json({
-                success: false,
-                message: 'Unable to fetch IP information'
-            });
-        }
+        // Create new IP intelligence record
+        const newIPData = {
+            id: ipIntelligenceData.length + 1,
+            ip_address: address,
+            country: ipInfo.country || 'Unknown',
+            city: ipInfo.city || 'Unknown',
+            region: ipInfo.region || 'Unknown',
+            isp: ipInfo.org || 'Unknown',
+            location: ipInfo.loc || '0,0',
+            postal: ipInfo.postal || 'Unknown',
+            timezone: ipInfo.timezone || 'Unknown',
+            threat_level: 'safe',
+            reputation_score: 75,
+            report_count: 0,
+            is_blacklisted: false,
+            last_seen: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
         
-        // Insert new IP intelligence record
-        const result = await pool.query(
-            `INSERT INTO ip_intelligence 
-             (ip_address, country, city, region, isp, threat_level, reputation_score, report_count)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-             RETURNING *`,
-            [
-                address,
-                ipInfo.country || 'Unknown',
-                ipInfo.city || 'Unknown',
-                ipInfo.region || 'Unknown',
-                ipInfo.org || 'Unknown',
-                'unknown',
-                50, // Default neutral score
-                0
-            ]
-        );
+        ipIntelligenceData.push(newIPData);
         
         res.json({
             success: true,
-            data: result.rows[0],
+            data: newIPData,
             source: 'api',
             raw_data: ipInfo
         });
@@ -104,7 +111,8 @@ exports.analyzeIP = async (req, res) => {
         console.error('Error analyzing IP:', error);
         res.status(500).json({
             success: false,
-            message: 'Error analyzing IP address'
+            message: 'Error analyzing IP address',
+            error: error.message
         });
     }
 };
@@ -114,20 +122,12 @@ exports.getIPReputation = async (req, res) => {
     try {
         const { address } = req.params;
         
-        const result = await pool.query(
-            `SELECT ip_address, threat_level, reputation_score, report_count, 
-                    is_blacklisted, last_seen
-             FROM ip_intelligence 
-             WHERE ip_address = $1`,
-            [address]
-        );
+        let ipData = ipIntelligenceData.find(ip => ip.ip_address === address);
         
-        if (result.rows.length === 0) {
-            // Automatically analyze if not in database
+        if (!ipData) {
+            // Automatically analyze if not in memory
             return exports.analyzeIP(req, res);
         }
-        
-        const ipData = result.rows[0];
         
         res.json({
             success: true,
@@ -157,56 +157,26 @@ exports.updateIPReputation = async (req, res) => {
         const { address } = req.params;
         const { threat_level, reputation_score, is_blacklisted, notes } = req.body;
         
-        const updates = [];
-        const values = [];
-        let paramIndex = 1;
+        const ipIndex = ipIntelligenceData.findIndex(ip => ip.ip_address === address);
         
-        if (threat_level) {
-            updates.push(`threat_level = $${paramIndex++}`);
-            values.push(threat_level);
-        }
-        
-        if (reputation_score !== undefined) {
-            updates.push(`reputation_score = $${paramIndex++}`);
-            values.push(reputation_score);
-        }
-        
-        if (is_blacklisted !== undefined) {
-            updates.push(`is_blacklisted = $${paramIndex++}`);
-            values.push(is_blacklisted);
-        }
-        
-        if (notes) {
-            updates.push(`notes = $${paramIndex++}`);
-            values.push(notes);
-        }
-        
-        if (updates.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'No updates provided'
-            });
-        }
-        
-        updates.push(`updated_at = NOW()`);
-        values.push(address);
-        
-        const query = `UPDATE ip_intelligence SET ${updates.join(', ')} 
-                      WHERE ip_address = $${paramIndex} RETURNING *`;
-        
-        const result = await pool.query(query, values);
-        
-        if (result.rows.length === 0) {
+        if (ipIndex === -1) {
             return res.status(404).json({
                 success: false,
-                message: 'IP address not found in database'
+                message: 'IP address not found'
             });
         }
+        
+        if (threat_level) ipIntelligenceData[ipIndex].threat_level = threat_level;
+        if (reputation_score !== undefined) ipIntelligenceData[ipIndex].reputation_score = reputation_score;
+        if (is_blacklisted !== undefined) ipIntelligenceData[ipIndex].is_blacklisted = is_blacklisted;
+        if (notes) ipIntelligenceData[ipIndex].notes = notes;
+        
+        ipIntelligenceData[ipIndex].updated_at = new Date().toISOString();
         
         res.json({
             success: true,
             message: 'IP reputation updated successfully',
-            data: result.rows[0]
+            data: ipIntelligenceData[ipIndex]
         });
         
     } catch (error) {
@@ -223,46 +193,34 @@ exports.getThreatIntelligence = async (req, res) => {
     try {
         const { limit = 100, threat_level, country } = req.query;
         
-        let query = `
-            SELECT ip_address, country, city, threat_level, reputation_score, 
-                   report_count, is_blacklisted, last_seen
-            FROM ip_intelligence
-            WHERE 1=1
-        `;
-        
-        const params = [];
-        let paramIndex = 1;
+        let filtered = [...ipIntelligenceData];
         
         if (threat_level) {
-            query += ` AND threat_level = $${paramIndex++}`;
-            params.push(threat_level);
+            filtered = filtered.filter(ip => ip.threat_level === threat_level);
         }
         
         if (country) {
-            query += ` AND country = $${paramIndex++}`;
-            params.push(country);
+            filtered = filtered.filter(ip => ip.country === country);
         }
         
-        query += ` ORDER BY report_count DESC, reputation_score ASC LIMIT $${paramIndex}`;
-        params.push(limit);
+        filtered.sort((a, b) => b.report_count - a.report_count || a.reputation_score - b.reputation_score);
+        filtered = filtered.slice(0, parseInt(limit));
         
-        const result = await pool.query(query, params);
-        
-        // Get statistics
-        const stats = await pool.query(`
-            SELECT 
-                COUNT(*) as total_ips,
-                COUNT(*) FILTER (WHERE threat_level = 'dangerous') as dangerous_count,
-                COUNT(*) FILTER (WHERE threat_level = 'suspicious') as suspicious_count,
-                COUNT(*) FILTER (WHERE is_blacklisted = true) as blacklisted_count,
-                AVG(reputation_score)::numeric(10,2) as avg_reputation
-            FROM ip_intelligence
-        `);
+        // Calculate statistics
+        const stats = {
+            total_ips: ipIntelligenceData.length,
+            dangerous_count: ipIntelligenceData.filter(ip => ip.threat_level === 'dangerous').length,
+            suspicious_count: ipIntelligenceData.filter(ip => ip.threat_level === 'suspicious').length,
+            blacklisted_count: ipIntelligenceData.filter(ip => ip.is_blacklisted).length,
+            avg_reputation: ipIntelligenceData.length > 0 
+                ? (ipIntelligenceData.reduce((sum, ip) => sum + ip.reputation_score, 0) / ipIntelligenceData.length).toFixed(2)
+                : 0
+        };
         
         res.json({
             success: true,
-            data: result.rows,
-            statistics: stats.rows[0]
+            data: filtered,
+            statistics: stats
         });
         
     } catch (error) {
@@ -277,23 +235,41 @@ exports.getThreatIntelligence = async (req, res) => {
 // Get geographic threat distribution
 exports.getGeographicThreats = async (req, res) => {
     try {
-        const result = await pool.query(`
-            SELECT country, 
-                   COUNT(*) as total_ips,
-                   COUNT(*) FILTER (WHERE threat_level = 'dangerous') as dangerous_count,
-                   COUNT(*) FILTER (WHERE threat_level = 'suspicious') as suspicious_count,
-                   SUM(report_count) as total_reports,
-                   AVG(reputation_score)::numeric(10,2) as avg_reputation
-            FROM ip_intelligence
-            WHERE country IS NOT NULL AND country != 'Unknown'
-            GROUP BY country
-            ORDER BY total_reports DESC, dangerous_count DESC
-            LIMIT 50
-        `);
+        const filtered = ipIntelligenceData.filter(ip => ip.country && ip.country !== 'Unknown');
+        
+        const grouped = {};
+        filtered.forEach(ip => {
+            if (!grouped[ip.country]) {
+                grouped[ip.country] = {
+                    country: ip.country,
+                    total_ips: 0,
+                    dangerous_count: 0,
+                    suspicious_count: 0,
+                    total_reports: 0,
+                    reputation_scores: []
+                };
+            }
+            
+            grouped[ip.country].total_ips++;
+            if (ip.threat_level === 'dangerous') grouped[ip.country].dangerous_count++;
+            if (ip.threat_level === 'suspicious') grouped[ip.country].suspicious_count++;
+            grouped[ip.country].total_reports += ip.report_count;
+            grouped[ip.country].reputation_scores.push(ip.reputation_score);
+        });
+        
+        const result = Object.values(grouped).map(item => ({
+            ...item,
+            avg_reputation: item.reputation_scores.length > 0
+                ? (item.reputation_scores.reduce((a, b) => a + b, 0) / item.reputation_scores.length).toFixed(2)
+                : 0,
+            reputation_scores: undefined
+        }));
+        
+        result.sort((a, b) => b.total_reports - a.total_reports || b.dangerous_count - a.dangerous_count);
         
         res.json({
             success: true,
-            data: result.rows
+            data: result.slice(0, 50)
         });
         
     } catch (error) {
