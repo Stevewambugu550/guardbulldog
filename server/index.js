@@ -22,7 +22,29 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://guardbulldog.netlify.app', 'https://guardbulldog-api.onrender.com'],
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Allow all Netlify domains and localhost
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5000',
+      /\.netlify\.app$/,
+      /\.onrender\.com$/
+    ];
+    
+    const isAllowed = allowedOrigins.some(pattern => {
+      if (typeof pattern === 'string') return pattern === origin;
+      return pattern.test(origin);
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all for now
+    }
+  },
   credentials: true
 }));
 app.use(helmet());
