@@ -31,6 +31,7 @@ app.use(cors({
       'http://localhost:3000',
       'http://localhost:5000',
       'https://guardbulldog234.netlify.app',
+      'https://curious-heliotrope-44565b.netlify.app',
       /\.netlify\.app$/,
       /\.onrender\.com$/
     ];
