@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Phishing Awareness & Reporting System for Bowie State University",
   "main": "server/index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon server/index.js",
@@ -24,7 +27,7 @@
   "author": "GUARDBULLDOG Team - Bowie State University",
   "license": "MIT",
   "dependencies": {
-    "axios": "^1.13.2",
+    "axios": "^1.6.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -36,7 +39,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.4",
-    "openai": "^4.47.1",
+    "openai": "^4.20.0",
     "pg": "^8.11.3"
   },
   "devDependencies": {
