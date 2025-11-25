@@ -55,25 +55,9 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  const login = async (email, password, verificationCode = null) => {
+  const login = async (email, password) => {
     try {
-      const response = await axios.post(`${API_URL}/api/auth/login`, { 
-        email, 
-        password,
-        verificationCode 
-      });
-      
-      // Check if verification is required
-      if (response.data.requiresVerification) {
-        toast.success('Verification code sent to your email!');
-        return { 
-          success: false, 
-          requiresVerification: true,
-          email: response.data.email,
-          message: response.data.message
-        };
-      }
-
+      const response = await axios.post(`${API_URL}/api/auth/login`, { email, password });
       const { token, user: userData } = response.data;
 
       localStorage.setItem('token', token);
@@ -81,23 +65,12 @@ export const AuthProvider = ({ children }) => {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(userData);
 
-      toast.success(`Welcome back! ✅`);
+      toast.success(`Welcome back, ${userData.firstName}!`);
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.msg || error.response?.data?.message || 'Login failed';
       toast.error(message);
       return { success: false, error: message };
-    }
-  };
-
-  const resendCode = async (email) => {
-    try {
-      await axios.post(`${API_URL}/api/auth/resend-code`, { email });
-      toast.success('New verification code sent!');
-      return { success: true };
-    } catch (error) {
-      toast.error('Failed to resend code');
-      return { success: false };
     }
   };
 
@@ -163,8 +136,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateProfile,
-    changePassword,
-    resendCode
+    changePassword
   };
 
   return (

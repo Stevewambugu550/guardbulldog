@@ -110,14 +110,14 @@ exports.register = async (req, res) => {
   }
 };
 
-// Login user - Step 1: Verify credentials and send code
+// Login user - Simple direct login (no verification code)
 exports.login = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { email, password, verificationCode } = req.body;
+  const { email, password } = req.body;
 
   try {
     // Find user by email
@@ -132,83 +132,27 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // If verification code provided, verify it
-    if (verificationCode) {
-      const storedData = verificationCodes.get(email);
-      if (!storedData || storedData.code !== verificationCode) {
-        return res.status(400).json({ message: 'Invalid verification code' });
+    // Generate JWT token
+    const payload = {
+      user: {
+        id: user.id,
+        role: user.role,
+        email: user.email
       }
-      if (Date.now() > storedData.expires) {
-        verificationCodes.delete(email);
-        return res.status(400).json({ message: 'Verification code expired' });
-      }
-      
-      // Code verified! Delete it and complete login
-      verificationCodes.delete(email);
-      
-      // Generate JWT token
-      const payload = {
-        user: {
-          id: user.id,
-          role: user.role,
-          email: user.email
-        }
-      };
+    };
 
-      const token = jwt.sign(payload, process.env.JWT_SECRET || 'guardbulldog_default_secret_key_2024', { expiresIn: '7d' });
+    const token = jwt.sign(payload, process.env.JWT_SECRET || 'guardbulldog_default_secret_key_2024', { expiresIn: '7d' });
 
-      // Return token and user data (without password)
-      const { password: _, ...userWithoutPassword } = user;
-      return res.json({
-        token,
-        user: userWithoutPassword,
-        verified: true
-      });
-    }
-
-    // No code provided - generate and send one
-    const code = generateCode();
-    verificationCodes.set(email, {
-      code,
-      expires: Date.now() + 10 * 60 * 1000 // 10 minutes
-    });
-
-    // Try to send email
-    const emailSent = await sendVerificationEmail(email, code);
-    
-    // For demo/development: if email fails, still allow login with code shown in console
-    console.log(`🔐 Verification code for ${email}: ${code}`);
-
+    // Return token and user data (without password)
+    const { password: _, ...userWithoutPassword } = user;
     res.json({
-      requiresVerification: true,
-      message: emailSent 
-        ? 'Verification code sent to your email' 
-        : 'Check console for verification code (email service not configured)',
-      email: email
+      token,
+      user: userWithoutPassword
     });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ message: 'Server error during login' });
   }
-};
-
-// Resend verification code
-exports.resendCode = async (req, res) => {
-  const { email } = req.body;
-  
-  const code = generateCode();
-  verificationCodes.set(email, {
-    code,
-    expires: Date.now() + 10 * 60 * 1000
-  });
-
-  const emailSent = await sendVerificationEmail(email, code);
-  console.log(`🔐 New verification code for ${email}: ${code}`);
-
-  res.json({
-    message: emailSent ? 'New code sent to your email' : 'Check console for code',
-    success: true
-  });
 };
 
 // Verify token and get current user
