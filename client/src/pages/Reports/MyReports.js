@@ -1,40 +1,72 @@
-import React, { useState } from 'react';
-import { useQuery } from 'react-query';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
 import {
   DocumentTextIcon,
   EyeIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
-import LoadingSpinner from '../../components/UI/LoadingSpinner';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const MyReports = () => {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     status: '',
     reportType: '',
     search: ''
   });
 
-  const { data, isLoading, error } = useQuery(
-    ['myReports', currentPage, filters],
-    () => axios.get('/api/reports/my-reports', {
-      params: {
-        page: currentPage,
-        limit: 10,
-        ...filters
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/reports/user`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setReports(data.reports || data || []);
+      } else {
+        // If no reports or error, set empty array
+        setReports([]);
       }
-    }).then(res => res.data),
-    {
-      keepPreviousData: true
+    } catch (err) {
+      console.error('Error fetching reports:', err);
+      setReports([]);
+    } finally {
+      setLoading(false);
     }
-  );
+  };
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
-    setCurrentPage(1);
   };
+
+  // Filter reports based on current filters
+  const filteredReports = reports.filter(report => {
+    if (filters.status && report.status !== filters.status) return false;
+    if (filters.reportType && report.reportType !== filters.reportType) return false;
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      return (
+        report.emailSubject?.toLowerCase().includes(searchLower) ||
+        report.senderEmail?.toLowerCase().includes(searchLower)
+      );
+    }
+    return true;
+  });
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -57,19 +89,19 @@ const MyReports = () => {
     return badges[severity] || 'badge-medium';
   };
 
-  if (isLoading) {
-    return <LoadingSpinner text="Loading your reports..." />;
-  }
-
-  if (error) {
+  if (loading) {
     return (
-      <div className="text-center py-12">
-        <p className="text-red-600">Error loading reports. Please try again.</p>
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <svg className="animate-spin h-10 w-10 text-blue-600 mx-auto mb-4" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          <p className="text-gray-600">Loading your reports...</p>
+        </div>
       </div>
     );
   }
-
-  const { reports = [], pagination = {} } = data || {};
 
   return (
     <div className="space-y-6">
@@ -81,9 +113,9 @@ const MyReports = () => {
         </div>
         <Link
           to="/app/report-phishing"
-          className="btn-primary flex items-center"
+          className="px-5 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-medium hover:from-red-600 hover:to-red-700 transition flex items-center shadow-sm"
         >
-          <DocumentTextIcon className="h-4 w-4 mr-2" />
+          <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
           New Report
         </Link>
       </div>
@@ -135,23 +167,24 @@ const MyReports = () => {
       </div>
 
       {/* Reports List */}
-      {reports.length === 0 ? (
-        <div className="text-center py-12">
-          <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No reports found</h3>
-          <p className="text-gray-500 mb-4">
+      {filteredReports.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-xl">
+          <DocumentTextIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-xl font-medium text-gray-900 mb-2">No reports found</h3>
+          <p className="text-gray-500 mb-6">
             {filters.search || filters.status || filters.reportType
               ? "No reports match your current filters."
-              : "You haven't submitted any reports yet."}
+              : "You haven't submitted any reports yet. Help protect our community!"}
           </p>
-          <Link to="/app/report-phishing" className="btn-primary">
+          <Link to="/app/report-phishing" className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-medium hover:from-red-600 hover:to-red-700 transition inline-flex items-center">
+            <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
             Submit Your First Report
           </Link>
         </div>
       ) : (
         <div className="space-y-4">
-          {reports.map((report) => (
-            <div key={report._id} className="card hover:shadow-md transition-shadow">
+          {filteredReports.map((report, index) => (
+            <div key={report._id || report.id || index} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-2">
@@ -206,11 +239,11 @@ const MyReports = () => {
 
                 <div className="ml-4 flex-shrink-0">
                   <Link
-                    to={`/app/reports/${report._id}`}
-                    className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    to={`/app/reports/${report._id || report.id}`}
+                    className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition"
                   >
-                    <EyeIcon className="h-4 w-4 mr-1" />
-                    View
+                    <EyeIcon className="h-4 w-4 mr-2" />
+                    View Details
                   </Link>
                 </div>
               </div>
@@ -219,75 +252,10 @@ const MyReports = () => {
         </div>
       )}
 
-      {/* Pagination */}
-      {pagination.pages > 1 && (
-        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
-          <div className="flex flex-1 justify-between sm:hidden">
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => setCurrentPage(Math.min(pagination.pages, currentPage + 1))}
-              disabled={currentPage === pagination.pages}
-              className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
-          </div>
-          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-gray-700">
-                Showing page <span className="font-medium">{currentPage}</span> of{' '}
-                <span className="font-medium">{pagination.pages}</span> ({pagination.total} total reports)
-              </p>
-            </div>
-            <div>
-              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span className="sr-only">Previous</span>
-                  <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
-                  </svg>
-                </button>
-                
-                {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                  const page = i + 1;
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                        page === currentPage
-                          ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
-                          : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  );
-                })}
-
-                <button
-                  onClick={() => setCurrentPage(Math.min(pagination.pages, currentPage + 1))}
-                  disabled={currentPage === pagination.pages}
-                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span className="sr-only">Next</span>
-                  <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </nav>
-            </div>
-          </div>
+      {/* Report Count */}
+      {filteredReports.length > 0 && (
+        <div className="text-center text-sm text-gray-500">
+          Showing {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''}
         </div>
       )}
     </div>
