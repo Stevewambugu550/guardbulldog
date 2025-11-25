@@ -4,7 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "18"
-  REACT_APP_API_URL = "https://guardbulldog-api.onrender.com"
+  REACT_APP_API_URL = "https://guardbulldog-3.onrender.com"
 
 [[redirects]]
   from = "/*"
