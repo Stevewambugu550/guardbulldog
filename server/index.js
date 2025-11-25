@@ -1,13 +1,9 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
-const pool = require('./config/database');
 
-// Test Database Connection (non-blocking)
-pool.query('SELECT NOW()')
-  .then(() => console.log('✅ Database connected successfully'))
-  .catch(err => console.log('⚠️ Database not connected:', err.message));
+// NO DATABASE - Using in-memory storage
+console.log('🚀 Starting GuardBulldog API with in-memory storage...');
 
 const app = express();
 const fs = require('fs');
