@@ -104,4 +104,17 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  
+  // Keep-alive ping to prevent Render free tier from sleeping
+  if (process.env.NODE_ENV === 'production') {
+    const SELF_URL = process.env.RENDER_EXTERNAL_URL || 'https://guardbulldog-3.onrender.com';
+    setInterval(() => {
+      const https = require('https');
+      https.get(`${SELF_URL}/health`, (res) => {
+        console.log(`Keep-alive ping: ${res.statusCode}`);
+      }).on('error', (err) => {
+        console.log('Keep-alive ping failed:', err.message);
+      });
+    }, 14 * 60 * 1000); // Ping every 14 minutes
+  }
 });
