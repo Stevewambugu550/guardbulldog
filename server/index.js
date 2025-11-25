@@ -30,6 +30,7 @@ app.use(cors({
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:5000',
+      'https://guardbulldog234.netlify.app',
       /\.netlify\.app$/,
       /\.onrender\.com$/
     ];
