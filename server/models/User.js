@@ -50,6 +50,37 @@ const User = {
   async findAll() {
     const result = await pool.query('SELECT * FROM users ORDER BY "createdAt" DESC');
     return result.rows;
+  },
+
+  async count(filters = {}) {
+    try {
+      let query = 'SELECT COUNT(*) FROM users';
+      const params = [];
+      
+      if (filters.role) {
+        query += ' WHERE role = $1';
+        params.push(filters.role);
+      }
+      
+      const result = await pool.query(query, params);
+      return parseInt(result.rows[0].count);
+    } catch (err) {
+      console.log('Count error:', err.message);
+      return 0;
+    }
+  },
+
+  async updateRole(userId, role) {
+    try {
+      const result = await pool.query(
+        'UPDATE users SET role = $1 WHERE id = $2 RETURNING *',
+        [role, userId]
+      );
+      return result.rows[0];
+    } catch (err) {
+      console.log('Update role error:', err.message);
+      return null;
+    }
   }
 };
 

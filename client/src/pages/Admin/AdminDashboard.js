@@ -1,5 +1,4 @@
-import React from 'react';
-import { useQuery } from 'react-query';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -8,328 +7,219 @@ import {
   UsersIcon,
   DocumentTextIcon,
   AcademicCapIcon,
-  ArrowTrendingUpIcon,
-  ClockIcon
+  ClockIcon,
+  ShieldCheckIcon,
+  EnvelopeIcon
 } from '@heroicons/react/24/outline';
-import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import LoadingSpinner from '../../components/UI/LoadingSpinner';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const AdminDashboard = () => {
-  const { data: dashboardData, isLoading } = useQuery(
-    'adminDashboard',
-    () => axios.get('/api/admin/dashboard').then(res => res.data),
-    {
-      refetchInterval: 30000 // Refresh every 30 seconds
-    }
-  );
+  const [users, setUsers] = useState([]);
+  const [stats, setStats] = useState({ total: 0, pending: 0, resolved: 0 });
+  const [loading, setLoading] = useState(true);
+  const [recentActivity, setRecentActivity] = useState([]);
 
-  if (isLoading) {
-    return <LoadingSpinner text="Loading dashboard..." />;
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const usersRes = await axios.get(`${API_URL}/api/admin/users`);
+        const usersData = usersRes.data.users || usersRes.data || [];
+        setUsers(usersData);
+        
+        // Create recent activity from users
+        const activity = usersData.slice(0, 5).map(u => ({
+          type: 'user_registered',
+          user: `${u.firstName} ${u.lastName}`,
+          email: u.email,
+          date: u.createdAt
+        }));
+        setRecentActivity(activity);
+      } catch (err) {
+        console.log('Fetch error:', err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <span className="ml-3 text-gray-600">Loading admin data...</span>
+      </div>
+    );
   }
 
-  const { reports = {}, users = {}, education = {} } = dashboardData || {};
-
-  const COLORS = ['#3B82F6', '#EF4444', '#F59E0B', '#10B981', '#8B5CF6'];
-
-  const threatDistributionData = reports.distribution?.map((item, index) => ({
-    name: item._id,
-    value: item.count,
-    color: COLORS[index % COLORS.length]
-  })) || [];
-
-  const trendData = reports.trends?.map(trend => ({
-    date: `${trend._id.month}/${trend._id.day}`,
-    reports: trend.count
-  })) || [];
+  const studentCount = users.filter(u => u.role === 'student' || u.role === 'user').length;
+  const facultyCount = users.filter(u => u.role === 'faculty' || u.role === 'staff').length;
+  const adminCount = users.filter(u => u.role === 'admin').length;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-gray-600">Monitor system activity and security metrics</p>
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-6 text-white">
+        <h1 className="text-2xl font-bold">🔐 Admin Dashboard</h1>
+        <p className="text-purple-100 mt-1">Monitor and manage GuardBulldog platform</p>
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="card">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
           <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-blue-100">
-              <DocumentTextIcon className="h-6 w-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Reports</p>
-              <p className="text-2xl font-bold text-gray-900">{reports.total || 0}</p>
-              <p className="text-xs text-gray-500">
-                +{reports.last7Days || 0} this week
-              </p>
+            <UsersIcon className="h-8 w-8 text-blue-500" />
+            <div className="ml-3">
+              <p className="text-sm text-gray-500">Total Users</p>
+              <p className="text-2xl font-bold text-gray-900">{users.length}</p>
             </div>
           </div>
         </div>
-
-        <div className="card">
+        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
           <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-yellow-100">
-              <ClockIcon className="h-6 w-6 text-yellow-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Pending Reports</p>
-              <p className="text-2xl font-bold text-gray-900">{reports.pending || 0}</p>
-              <p className="text-xs text-gray-500">Needs attention</p>
+            <AcademicCapIcon className="h-8 w-8 text-green-500" />
+            <div className="ml-3">
+              <p className="text-sm text-gray-500">Students</p>
+              <p className="text-2xl font-bold text-gray-900">{studentCount}</p>
             </div>
           </div>
         </div>
-
-        <div className="card">
+        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-purple-500">
           <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-red-100">
-              <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Confirmed Threats</p>
-              <p className="text-2xl font-bold text-gray-900">{reports.confirmed || 0}</p>
-              <p className="text-xs text-gray-500">Verified phishing</p>
+            <UsersIcon className="h-8 w-8 text-purple-500" />
+            <div className="ml-3">
+              <p className="text-sm text-gray-500">Faculty/Staff</p>
+              <p className="text-2xl font-bold text-gray-900">{facultyCount}</p>
             </div>
           </div>
         </div>
-
-        <div className="card">
+        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
           <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-green-100">
-              <UsersIcon className="h-6 w-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Active Users</p>
-              <p className="text-2xl font-bold text-gray-900">{users.active || 0}</p>
-              <p className="text-xs text-gray-500">Last 30 days</p>
+            <ShieldCheckIcon className="h-8 w-8 text-red-500" />
+            <div className="ml-3">
+              <p className="text-sm text-gray-500">Admins</p>
+              <p className="text-2xl font-bold text-gray-900">{adminCount}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Report Trends */}
-        <div className="card">
-          <div className="card-header">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-              <ArrowTrendingUpIcon className="h-5 w-5 mr-2" />
-              Report Trends (Last 30 Days)
-            </h2>
-          </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="reports" stroke="#3B82F6" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Threat Distribution */}
-        <div className="card">
-          <div className="card-header">
-            <h2 className="text-lg font-semibold text-gray-900">Threat Distribution</h2>
-          </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={threatDistributionData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {threatDistributionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* Top Threat Sources */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="text-lg font-semibold text-gray-900">Top Threat Sources</h2>
+      {/* All Registered Users Table */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+            <UsersIcon className="h-5 w-5 mr-2" />
+            All Registered Users ({users.length})
+          </h2>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email Address
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Reports
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Seen
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Severity
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joined</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {reports.topSources?.slice(0, 10).map((source, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {source._id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {source.count}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(source.latestReport).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      source.severity === 'critical' ? 'bg-red-100 text-red-800' :
-                      source.severity === 'high' ? 'bg-orange-100 text-orange-800' :
-                      source.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {source.severity}
-                    </span>
-                  </td>
-                </tr>
-              )) || (
+              {users.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
-                    No threat sources found
+                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                    No users registered yet
                   </td>
                 </tr>
+              ) : (
+                users.map((user, index) => (
+                  <tr key={user.id || index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                          {user.firstName?.[0]}{user.lastName?.[0]}
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                        user.role === 'admin' ? 'bg-red-100 text-red-800' :
+                        user.role === 'faculty' ? 'bg-purple-100 text-purple-800' :
+                        user.role === 'staff' ? 'bg-green-100 text-green-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {user.role || 'student'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.department || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* System Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card">
-          <div className="card-header">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <UsersIcon className="h-5 w-5 mr-2" />
-              User Statistics
-            </h3>
-          </div>
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Total Users</span>
-              <span className="text-sm font-medium text-gray-900">{users.total || 0}</span>
+      {/* Quick Actions */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link to="/app/admin/reports" className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+            <DocumentTextIcon className="h-8 w-8 text-blue-600" />
+            <div className="ml-3">
+              <h3 className="font-medium text-blue-900">View All Reports</h3>
+              <p className="text-sm text-blue-700">Review phishing reports</p>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">New This Month</span>
-              <span className="text-sm font-medium text-gray-900">{users.newLast30Days || 0}</span>
+          </Link>
+          <Link to="/app/admin/users" className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+            <UsersIcon className="h-8 w-8 text-green-600" />
+            <div className="ml-3">
+              <h3 className="font-medium text-green-900">Manage Users</h3>
+              <p className="text-sm text-green-700">Edit user roles</p>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Active Users</span>
-              <span className="text-sm font-medium text-gray-900">{users.active || 0}</span>
+          </Link>
+          <Link to="/app/education" className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+            <AcademicCapIcon className="h-8 w-8 text-purple-600" />
+            <div className="ml-3">
+              <h3 className="font-medium text-purple-900">Education</h3>
+              <p className="text-sm text-purple-700">Training modules</p>
             </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="card-header">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <AcademicCapIcon className="h-5 w-5 mr-2" />
-              Education Stats
-            </h3>
-          </div>
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Total Modules</span>
-              <span className="text-sm font-medium text-gray-900">{education.totalModules || 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Active Modules</span>
-              <span className="text-sm font-medium text-gray-900">{education.activeModules || 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Completions</span>
-              <span className="text-sm font-medium text-gray-900">{education.totalCompletions || 0}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="card-header">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <ChartBarIcon className="h-5 w-5 mr-2" />
-              Report Stats
-            </h3>
-          </div>
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">False Positives</span>
-              <span className="text-sm font-medium text-gray-900">{reports.falsePositives || 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">This Month</span>
-              <span className="text-sm font-medium text-gray-900">{reports.last30Days || 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Response Rate</span>
-              <span className="text-sm font-medium text-gray-900">
-                {reports.total > 0 ? Math.round(((reports.total - reports.pending) / reports.total) * 100) : 0}%
-              </span>
-            </div>
-          </div>
+          </Link>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link
-            to="/app/admin/reports"
-            className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors group"
-          >
-            <DocumentTextIcon className="h-8 w-8 text-blue-600 mr-3" />
-            <div>
-              <h3 className="font-medium text-blue-900">Review Reports</h3>
-              <p className="text-sm text-blue-700">Process pending reports</p>
-            </div>
-          </Link>
-          
-          <Link
-            to="/app/admin/users"
-            className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors group"
-          >
-            <UsersIcon className="h-8 w-8 text-green-600 mr-3" />
-            <div>
-              <h3 className="font-medium text-green-900">Manage Users</h3>
-              <p className="text-sm text-green-700">User administration</p>
-            </div>
-          </Link>
-          
-          <Link
-            to="/app/education"
-            className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors group"
-          >
-            <AcademicCapIcon className="h-8 w-8 text-purple-600 mr-3" />
-            <div>
-              <h3 className="font-medium text-purple-900">Education Center</h3>
-              <p className="text-sm text-purple-700">Manage training content</p>
-            </div>
-          </Link>
-        </div>
+      {/* Recent Activity */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <ClockIcon className="h-5 w-5 mr-2" />
+          Recent Activity
+        </h2>
+        {recentActivity.length === 0 ? (
+          <p className="text-gray-500">No recent activity</p>
+        ) : (
+          <div className="space-y-3">
+            {recentActivity.map((activity, index) => (
+              <div key={index} className="flex items-center p-3 bg-gray-50 rounded-lg">
+                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                  <UsersIcon className="h-4 w-4 text-green-600" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-gray-900">
+                    <span className="font-medium">{activity.user}</span> registered
+                  </p>
+                  <p className="text-xs text-gray-500">{activity.email}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
