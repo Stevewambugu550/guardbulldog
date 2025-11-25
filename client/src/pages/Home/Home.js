@@ -6,14 +6,12 @@ import {
   ExclamationTriangleIcon,
   ChartBarIcon,
   ArrowRightIcon,
-  UserGroupIcon,
-  LockClosedIcon,
   BellAlertIcon,
-  CheckBadgeIcon,
-  GlobeAltIcon,
   PhoneIcon,
   EnvelopeIcon,
-  MapPinIcon
+  MapPinIcon,
+  Bars3Icon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 const Home = () => {
@@ -23,6 +21,7 @@ const Home = () => {
     reports: 456,
     score: 98
   });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Animate stats on load
   useEffect(() => {
@@ -62,17 +61,44 @@ const Home = () => {
               </div>
               <span className="text-xl font-bold">GUARD<span className="text-blue-600">BULLDOG</span></span>
             </Link>
+            
+            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
               <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium">Home</Link>
               <Link to="/about" className="text-gray-700 hover:text-blue-600 font-medium">About</Link>
               <Link to="/contact" className="text-gray-700 hover:text-blue-600 font-medium">Contact</Link>
+              <Link to="/guest-report" className="text-red-600 hover:text-red-700 font-medium">🚨 Report</Link>
               <Link to="/login" className="text-gray-700 hover:text-blue-600 font-medium">Sign In</Link>
               <Link to="/register" className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition font-medium">
                 Get Started
               </Link>
             </div>
+
+            {/* Mobile Menu Button */}
+            <button 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+            >
+              {mobileMenuOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white border-t border-gray-100 shadow-lg">
+            <div className="px-4 py-4 space-y-3">
+              <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">🏠 Home</Link>
+              <Link to="/about" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">ℹ️ About</Link>
+              <Link to="/contact" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">📞 Contact</Link>
+              <Link to="/guest-report" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg font-bold">🚨 Report Phishing</Link>
+              <Link to="/track-report" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">🔍 Track Report</Link>
+              <hr className="my-2" />
+              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">🔐 Sign In</Link>
+              <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-bold text-center">Get Started Free</Link>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Hero Section */}
