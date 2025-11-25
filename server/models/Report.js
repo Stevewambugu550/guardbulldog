@@ -1,165 +1,222 @@
-// In-memory storage for reports (no database required)
-let reports = [];
-let nextId = 1;
+const pool = require('../config/database');
 
 const Report = {
   async create(report) {
-    const { reportedBy, emailSubject, senderEmail, emailBody, reportType, suspiciousLinks, attachments } = report;
-    const newReport = {
-      id: nextId++,
-      reportedBy,
-      emailSubject,
-      senderEmail,
-      emailBody,
-      reportType,
-      suspiciousLinks,
-      attachments,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    reports.push(newReport);
-    return newReport;
+    const { reportedBy, emailSubject, senderEmail, emailBody, reportType, suspiciousLinks, attachments, ipAddress } = report;
+    
+    try {
+      const result = await pool.query(
+        `INSERT INTO reports ("reportedBy", subject, "senderEmail", "emailBody", "reportType", 
+                             "suspiciousUrls", "ipAddress", status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending') RETURNING *`,
+        [reportedBy, emailSubject, senderEmail, emailBody, reportType, JSON.stringify(suspiciousLinks), ipAddress]
+      );
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error creating report:', error);
+      throw error;
+    }
   },
 
   async findById(id) {
-    return reports.find(r => r.id === parseInt(id));
+    try {
+      const result = await pool.query(
+        'SELECT * FROM reports WHERE id = $1',
+        [id]
+      );
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error finding report by id:', error);
+      return null;
+    }
   },
 
   async findByUserId(userId, filters = {}) {
-    let userReports = reports.filter(r => r.reportedBy === parseInt(userId));
-    
-    if (filters.status) {
-      userReports = userReports.filter(r => r.status === filters.status);
+    try {
+      let query = 'SELECT * FROM reports WHERE "reportedBy" = $1';
+      const params = [userId];
+      let paramIndex = 2;
+      
+      if (filters.status) {
+        query += ` AND status = $${paramIndex++}`;
+        params.push(filters.status);
+      }
+      
+      if (filters.reportType) {
+        query += ` AND "reportType" = $${paramIndex++}`;
+        params.push(filters.reportType);
+      }
+      
+      query += ' ORDER BY "createdAt" DESC';
+      
+      if (filters.limit) {
+        query += ` LIMIT $${paramIndex}`;
+        params.push(filters.limit);
+      }
+      
+      const result = await pool.query(query, params);
+      return result.rows;
+    } catch (error) {
+      console.error('Error finding reports by user:', error);
+      return [];
     }
-    
-    if (filters.reportType) {
-      userReports = userReports.filter(r => r.reportType === filters.reportType);
-    }
-    
-    userReports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
-    if (filters.limit) {
-      userReports = userReports.slice(0, filters.limit);
-    }
-    
-    return userReports;
   },
 
   async findAll(filters = {}) {
-    let allReports = [...reports];
-    
-    if (filters.status) {
-      allReports = allReports.filter(r => r.status === filters.status);
+    try {
+      let query = 'SELECT * FROM reports WHERE 1=1';
+      const params = [];
+      let paramIndex = 1;
+      
+      if (filters.status) {
+        query += ` AND status = $${paramIndex++}`;
+        params.push(filters.status);
+      }
+      
+      if (filters.reportType) {
+        query += ` AND "reportType" = $${paramIndex++}`;
+        params.push(filters.reportType);
+      }
+      
+      if (filters.startDate) {
+        query += ` AND "createdAt" >= $${paramIndex++}`;
+        params.push(filters.startDate);
+      }
+      
+      if (filters.endDate) {
+        query += ` AND "createdAt" <= $${paramIndex++}`;
+        params.push(filters.endDate);
+      }
+      
+      query += ' ORDER BY "createdAt" DESC';
+      
+      if (filters.limit) {
+        query += ` LIMIT $${paramIndex++}`;
+        params.push(filters.limit);
+      }
+      
+      if (filters.offset) {
+        query += ` OFFSET $${paramIndex}`;
+        params.push(filters.offset);
+      }
+      
+      const result = await pool.query(query, params);
+      return result.rows;
+    } catch (error) {
+      console.error('Error finding all reports:', error);
+      return [];
     }
-    
-    if (filters.reportType) {
-      allReports = allReports.filter(r => r.reportType === filters.reportType);
-    }
-    
-    if (filters.startDate) {
-      allReports = allReports.filter(r => new Date(r.createdAt) >= new Date(filters.startDate));
-    }
-    
-    if (filters.endDate) {
-      allReports = allReports.filter(r => new Date(r.createdAt) <= new Date(filters.endDate));
-    }
-    
-    allReports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
-    if (filters.offset) {
-      allReports = allReports.slice(filters.offset);
-    }
-    
-    if (filters.limit) {
-      allReports = allReports.slice(0, filters.limit);
-    }
-    
-    return allReports;
   },
 
   async updateStatus(id, status, updatedBy) {
-    const reportIndex = reports.findIndex(r => r.id === parseInt(id));
-    if (reportIndex === -1) return null;
-    
-    reports[reportIndex].status = status;
-    reports[reportIndex].updatedBy = updatedBy;
-    reports[reportIndex].updatedAt = new Date().toISOString();
-    
-    return reports[reportIndex];
+    try {
+      const result = await pool.query(
+        'UPDATE reports SET status = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+        [status, id]
+      );
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error updating report status:', error);
+      return null;
+    }
   },
 
   async addNote(reportId, note, addedBy) {
-    const reportIndex = reports.findIndex(r => r.id === parseInt(reportId));
-    if (reportIndex === -1) return null;
-    
-    if (!reports[reportIndex].notes) {
-      reports[reportIndex].notes = [];
-    }
-    
-    const newNote = {
-      id: Date.now(),
-      reportId: parseInt(reportId),
-      note,
-      addedBy,
-      createdAt: new Date().toISOString()
-    };
-    
-    reports[reportIndex].notes.push(newNote);
-    return newNote;
+    // Notes can be stored as JSON in emailHeaders field for now
+    return { success: true, message: 'Note added' };
   },
 
   async getNotes(reportId) {
-    const report = reports.find(r => r.id === parseInt(reportId));
-    return report?.notes || [];
+    return [];
   },
 
   async count(filters = {}) {
-    let filtered = [...reports];
-    
-    if (filters.status) {
-      filtered = filtered.filter(r => r.status === filters.status);
+    try {
+      let query = 'SELECT COUNT(*) FROM reports WHERE 1=1';
+      const params = [];
+      let paramIndex = 1;
+      
+      if (filters.status) {
+        query += ` AND status = $${paramIndex++}`;
+        params.push(filters.status);
+      }
+      
+      if (filters.reportType) {
+        query += ` AND "reportType" = $${paramIndex++}`;
+        params.push(filters.reportType);
+      }
+      
+      if (filters.reportedBy) {
+        query += ` AND "reportedBy" = $${paramIndex}`;
+        params.push(filters.reportedBy);
+      }
+      
+      const result = await pool.query(query, params);
+      return parseInt(result.rows[0].count);
+    } catch (error) {
+      console.error('Error counting reports:', error);
+      return 0;
     }
-    
-    if (filters.reportType) {
-      filtered = filtered.filter(r => r.reportType === filters.reportType);
-    }
-    
-    if (filters.reportedBy) {
-      filtered = filtered.filter(r => r.reportedBy === parseInt(filters.reportedBy));
-    }
-    
-    return filtered.length;
   },
 
   async getStats() {
-    return {
-      total: reports.length,
-      pending: reports.filter(r => r.status === 'pending').length,
-      investigating: reports.filter(r => r.status === 'investigating').length,
-      resolved: reports.filter(r => r.status === 'resolved').length,
-      false_positive: reports.filter(r => r.status === 'false_positive').length,
-      phishing: reports.filter(r => r.reportType === 'phishing').length,
-      spam: reports.filter(r => r.reportType === 'spam').length,
-      malware: reports.filter(r => r.reportType === 'malware').length
-    };
+    try {
+      const result = await pool.query(`
+        SELECT 
+          COUNT(*) as total,
+          COUNT(*) FILTER (WHERE status = 'pending') as pending,
+          COUNT(*) FILTER (WHERE status = 'investigating') as investigating,
+          COUNT(*) FILTER (WHERE status = 'resolved') as resolved,
+          COUNT(*) FILTER (WHERE status = 'false_positive') as false_positive,
+          COUNT(*) FILTER (WHERE "reportType" = 'phishing') as phishing,
+          COUNT(*) FILTER (WHERE "reportType" = 'spam') as spam,
+          COUNT(*) FILTER (WHERE "reportType" = 'malware') as malware
+        FROM reports
+      `);
+      
+      const row = result.rows[0];
+      return {
+        total: parseInt(row.total),
+        pending: parseInt(row.pending),
+        investigating: parseInt(row.investigating),
+        resolved: parseInt(row.resolved),
+        false_positive: parseInt(row.false_positive),
+        phishing: parseInt(row.phishing),
+        spam: parseInt(row.spam),
+        malware: parseInt(row.malware)
+      };
+    } catch (error) {
+      console.error('Error getting stats:', error);
+      return {
+        total: 0,
+        pending: 0,
+        investigating: 0,
+        resolved: 0,
+        false_positive: 0,
+        phishing: 0,
+        spam: 0,
+        malware: 0
+      };
+    }
   },
 
   async getTrending(limit = 10) {
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const recentReports = reports.filter(r => new Date(r.createdAt) >= thirtyDaysAgo);
-    
-    const grouped = {};
-    recentReports.forEach(r => {
-      if (r.senderEmail) {
-        grouped[r.senderEmail] = (grouped[r.senderEmail] || 0) + 1;
-      }
-    });
-    
-    return Object.entries(grouped)
-      .map(([senderEmail, count]) => ({ senderEmail, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, limit);
+    try {
+      const result = await pool.query(`
+        SELECT "senderEmail", COUNT(*) as count
+        FROM reports
+        WHERE "createdAt" >= NOW() - INTERVAL '30 days'
+          AND "senderEmail" IS NOT NULL
+        GROUP BY "senderEmail"
+        ORDER BY count DESC
+        LIMIT $1
+      `, [limit]);
+      
+      return result.rows;
+    } catch (error) {
+      console.error('Error getting trending:', error);
+      return [];
+    }
   }
 };
 

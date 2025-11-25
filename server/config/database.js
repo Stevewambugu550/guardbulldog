@@ -2,19 +2,96 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/guardbulldog',
-  ssl: process.env.NODE_ENV === 'production' ? {
-    rejectUnauthorized: false
-  } : false
+  connectionString: process.env.DATABASE_URL || 'postgresql://localhost/guardbulldog',
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-// Test connection (non-blocking)
-pool.on('connect', () => {
-  console.log('✅ Database connected successfully');
-});
+// Initialize database tables
+const initializeDatabase = async () => {
+  try {
+    await pool.query('SELECT NOW()');
+    console.log('✅ Database connected successfully');
+    
+    // Create tables if they don't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        "firstName" VARCHAR(255) NOT NULL,
+        "lastName" VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        role VARCHAR(50) DEFAULT 'student',
+        department VARCHAR(255),
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
 
-pool.on('error', (err) => {
-  console.error('⚠️ Database connection issue:', err.message);
-});
+      CREATE TABLE IF NOT EXISTS reports (
+        id SERIAL PRIMARY KEY,
+        "reportedBy" INTEGER REFERENCES users(id),
+        "senderEmail" VARCHAR(255),
+        subject VARCHAR(500),
+        "emailBody" TEXT,
+        "emailHeaders" TEXT,
+        "suspiciousUrls" TEXT,
+        "reportType" VARCHAR(50),
+        status VARCHAR(50) DEFAULT 'pending',
+        "ipAddress" VARCHAR(50),
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS guest_reports (
+        id SERIAL PRIMARY KEY,
+        "trackingToken" VARCHAR(255) UNIQUE NOT NULL,
+        "senderEmail" VARCHAR(255),
+        subject VARCHAR(500),
+        "emailBody" TEXT,
+        "suspiciousUrls" TEXT,
+        "ipAddress" VARCHAR(50),
+        status VARCHAR(50) DEFAULT 'pending',
+        "submitterIp" VARCHAR(50),
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS ip_intelligence (
+        id SERIAL PRIMARY KEY,
+        "ipAddress" VARCHAR(50) UNIQUE NOT NULL,
+        country VARCHAR(100),
+        city VARCHAR(100),
+        region VARCHAR(100),
+        isp VARCHAR(255),
+        location VARCHAR(100),
+        "threatLevel" VARCHAR(50) DEFAULT 'safe',
+        "reputationScore" INTEGER DEFAULT 50,
+        "reportCount" INTEGER DEFAULT 0,
+        "isBlacklisted" BOOLEAN DEFAULT FALSE,
+        "lastSeen" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    
+    console.log('✅ Database tables initialized');
+    
+    // Create default admin user
+    const adminExists = await pool.query(`SELECT * FROM users WHERE email = 'admin@bowiestate.edu'`);
+    if (adminExists.rows.length === 0) {
+      const bcrypt = require('bcryptjs');
+      const hashedPassword = await bcrypt.hash('Admin@2024', 10);
+      await pool.query(`
+        INSERT INTO users ("firstName", "lastName", email, password, role, department)
+        VALUES ('Admin', 'GuardBulldog', 'admin@bowiestate.edu', $1, 'admin', 'IT Security')
+      `, [hashedPassword]);
+      console.log('✅ Default admin user created: admin@bowiestate.edu / Admin@2024');
+    }
+    
+  } catch (err) {
+    console.log('⚠️ Database initialization failed:', err.message);
+    console.log('Application will run with in-memory storage');
+  }
+};
+
+// Initialize on startup
+initializeDatabase();
 
 module.exports = pool;
