@@ -48,7 +48,7 @@ exports.register = async (req, res) => {
       }
     };
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign(payload, process.env.JWT_SECRET || 'guardbulldog_default_secret_key_2024', { expiresIn: '7d' });
 
     // Return token and user data (without password)
     const { password: _, ...userWithoutPassword } = user;
@@ -93,7 +93,7 @@ exports.login = async (req, res) => {
       }
     };
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign(payload, process.env.JWT_SECRET || 'guardbulldog_default_secret_key_2024', { expiresIn: '7d' });
 
     // Return token and user data (without password)
     const { password: _, ...userWithoutPassword } = user;
