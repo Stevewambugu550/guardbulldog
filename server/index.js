@@ -20,36 +20,22 @@ if (!fs.existsSync(uploadsDir)) {
   console.log('📁 Created uploads directory');
 }
 
-// Middleware
+// Middleware - Allow ALL origins for now to fix CORS issues
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    // Allow all Netlify domains and localhost
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:5000',
-      'https://guardbulldog234.netlify.app',
-      'https://curious-heliotrope-44565b.netlify.app',
-      /\.netlify\.app$/,
-      /\.onrender\.com$/
-    ];
-    
-    const isAllowed = allowedOrigins.some(pattern => {
-      if (typeof pattern === 'string') return pattern === origin;
-      return pattern.test(origin);
-    });
-    
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Allow all for now
-    }
-  },
-  credentials: true
+  origin: '*',
+  credentials: false
 }));
-app.use(helmet());
+
+// Add headers for CORS
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
