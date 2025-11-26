@@ -29,6 +29,7 @@ import SystemSettings from './pages/Admin/SystemSettings';
 import SecurityLogs from './pages/Admin/SecurityLogs';
 import GuestReport from './pages/Guest/GuestReport';
 import TrackReport from './pages/Guest/TrackReport';
+import Messages from './pages/Messages/Messages';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -110,6 +111,7 @@ function App() {
                 <Route path="profile" element={<Profile />} />
                 <Route path="education" element={<Education />} />
                 <Route path="education/modules/:id" element={<ModuleDetails />} />
+                <Route path="messages" element={<Messages />} />
                 
                 {/* Admin Routes */}
                 <Route path="admin/dashboard" element={

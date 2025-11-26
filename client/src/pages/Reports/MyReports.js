@@ -184,67 +184,91 @@ const MyReports = () => {
       ) : (
         <div className="space-y-4">
           {filteredReports.map((report, index) => (
-            <div key={report._id || report.id || index} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900 truncate pr-4">
-                      {report.emailSubject}
+            <div key={report._id || report.id || index} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+              {/* Header with Tracking Number */}
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-mono font-bold">
+                    {report.trackingNumber || `RPT-${String(report.id).padStart(4, '0')}`}
+                  </span>
+                  <span className="text-white/80 text-sm">
+                    {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                    report.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                    report.status === 'confirmed' ? 'bg-red-100 text-red-800' :
+                    report.status === 'investigating' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {(report.status || 'pending').replace('_', ' ')}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Report Content */}
+              <div className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3 truncate">
+                      {report.subject || report.emailSubject || 'Suspicious Email Report'}
                     </h3>
-                    <div className="flex items-center space-x-2 flex-shrink-0">
-                      <span className={getStatusBadge(report.status)}>
-                        {report.status.replace('_', ' ')}
-                      </span>
-                      <span className={getSeverityBadge(report.severity)}>
-                        {report.severity}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <span className="font-medium mr-2">From:</span>
-                      <span className="truncate">{report.senderEmail}</span>
-                    </div>
                     
-                    <div className="flex items-center text-sm text-gray-600">
-                      <span className="font-medium mr-2">Type:</span>
-                      <span className="capitalize">{report.reportType}</span>
-                      <span className="mx-2">•</span>
-                      <span className="font-medium mr-2">Submitted:</span>
-                      <span>{new Date(report.createdAt).toLocaleDateString()}</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      <div className="flex items-center">
+                        <span className="text-gray-500 w-24">Sender:</span>
+                        <span className="text-gray-900 font-medium truncate">{report.senderEmail || 'Unknown'}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-gray-500 w-24">Type:</span>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium uppercase ${
+                          report.reportType === 'phishing' ? 'bg-red-100 text-red-700' :
+                          report.reportType === 'malware' ? 'bg-purple-100 text-purple-700' :
+                          report.reportType === 'spam' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {report.reportType || 'suspicious'}
+                        </span>
+                      </div>
                     </div>
 
-                    {report.analysisResults?.riskScore && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <span className="font-medium mr-2">Risk Score:</span>
-                        <div className="flex items-center">
-                          <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
-                            <div
-                              className={`h-2 rounded-full ${
-                                report.analysisResults.riskScore >= 80 ? 'bg-red-500' :
-                                report.analysisResults.riskScore >= 60 ? 'bg-orange-500' :
-                                report.analysisResults.riskScore >= 30 ? 'bg-yellow-500' :
-                                'bg-green-500'
-                              }`}
-                              style={{ width: `${report.analysisResults.riskScore}%` }}
-                            />
-                          </div>
-                          <span>{report.analysisResults.riskScore}/100</span>
-                        </div>
+                    {/* Threat Level Bar */}
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">Threat Level</span>
+                        <span className={`text-sm font-bold ${
+                          (report.severity === 'critical' || report.severity === 'high') ? 'text-red-600' :
+                          report.severity === 'medium' ? 'text-yellow-600' : 'text-green-600'
+                        }`}>
+                          {(report.severity || 'medium').toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div className={`h-2.5 rounded-full ${
+                          (report.severity === 'critical' || report.severity === 'high') ? 'bg-red-500' :
+                          report.severity === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                        }`} style={{ width: report.severity === 'critical' ? '100%' : report.severity === 'high' ? '75%' : report.severity === 'medium' ? '50%' : '25%' }}></div>
+                      </div>
+                    </div>
+
+                    {/* Email Preview */}
+                    {report.emailBody && (
+                      <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                        <p className="text-sm text-gray-600 line-clamp-2">{report.emailBody.substring(0, 150)}...</p>
                       </div>
                     )}
                   </div>
-                </div>
 
-                <div className="ml-4 flex-shrink-0">
-                  <Link
-                    to={`/app/reports/${report._id || report.id}`}
-                    className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition"
-                  >
-                    <EyeIcon className="h-4 w-4 mr-2" />
-                    View Details
-                  </Link>
+                  <div className="ml-4 flex-shrink-0">
+                    <Link
+                      to={`/app/reports/${report._id || report.id}`}
+                      className="inline-flex items-center px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm"
+                    >
+                      <EyeIcon className="h-4 w-4 mr-2" />
+                      View Details
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>

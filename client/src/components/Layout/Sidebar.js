@@ -11,7 +11,8 @@ import {
   UsersIcon,
   Cog6ToothIcon,
   ShieldCheckIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -47,6 +48,12 @@ const Sidebar = ({ isOpen, onClose }) => {
       href: '/app/education', 
       icon: AcademicCapIcon,
       description: 'Learn about phishing threats'
+    },
+    { 
+      name: 'Messages', 
+      href: '/app/messages', 
+      icon: ChatBubbleLeftRightIcon,
+      description: 'Chat with security team'
     },
     { 
       name: 'Profile', 
