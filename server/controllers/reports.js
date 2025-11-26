@@ -78,7 +78,7 @@ exports.updateReportStatus = async (req, res) => {
   try {
     const { status } = req.body;
     
-    if (!['pending', 'investigating', 'resolved', 'false_positive'].includes(status)) {
+    if (!['pending', 'investigating', 'confirmed', 'resolved', 'false_positive'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status value' });
     }
 
