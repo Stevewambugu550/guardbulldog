@@ -58,13 +58,21 @@ exports.register = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { firstName, lastName, email, password, department } = req.body;
+  const { firstName, lastName, email, phone, password, department } = req.body;
 
   try {
     // Check if user already exists
     let existingUser = await User.findByEmail(email);
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists with this email' });
+    }
+
+    // Check if phone already registered (if provided)
+    if (phone) {
+      const phoneUser = await User.findByPhone(phone);
+      if (phoneUser) {
+        return res.status(400).json({ message: 'This phone number is already registered' });
+      }
     }
 
     // Email validation (relaxed for development/testing)
@@ -82,6 +90,7 @@ exports.register = async (req, res) => {
       firstName,
       lastName,
       email,
+      phone: phone || null,
       password: hashedPassword,
       role: 'user',
       department: department || 'Not Specified'

@@ -20,6 +20,7 @@ const initializeDatabase = async () => {
         "firstName" VARCHAR(255) NOT NULL,
         "lastName" VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
+        phone VARCHAR(50),
         password VARCHAR(255) NOT NULL,
         role VARCHAR(50) DEFAULT 'student',
         department VARCHAR(255),
@@ -28,6 +29,7 @@ const initializeDatabase = async () => {
 
       CREATE TABLE IF NOT EXISTS reports (
         id SERIAL PRIMARY KEY,
+        "trackingNumber" VARCHAR(50) UNIQUE,
         "reportedBy" INTEGER REFERENCES users(id),
         "senderEmail" VARCHAR(255),
         subject VARCHAR(500),
@@ -35,6 +37,7 @@ const initializeDatabase = async () => {
         "emailHeaders" TEXT,
         "suspiciousUrls" TEXT,
         "reportType" VARCHAR(50),
+        severity VARCHAR(50) DEFAULT 'medium',
         status VARCHAR(50) DEFAULT 'pending',
         "ipAddress" VARCHAR(50),
         "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -73,6 +76,16 @@ const initializeDatabase = async () => {
     `);
     
     console.log('✅ Database tables initialized');
+
+    // Add new columns if they don't exist (for existing databases)
+    try {
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
+      await pool.query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS "trackingNumber" VARCHAR(50) UNIQUE`);
+      await pool.query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS severity VARCHAR(50) DEFAULT 'medium'`);
+      console.log('✅ Database columns updated');
+    } catch (e) {
+      console.log('Column migration:', e.message);
+    }
     
     // Create default admin user
     const adminExists = await pool.query(`SELECT * FROM users WHERE email = 'admin@bowiestate.edu'`);

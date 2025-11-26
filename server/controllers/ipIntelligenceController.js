@@ -32,18 +32,70 @@ async function getIPInfo(ipAddress) {
     }
 }
 
-// Calculate threat level based on various factors
-function calculateThreatLevel(reportCount, isBlacklisted, reputationScore) {
-    if (isBlacklisted || reportCount > 10) return 'dangerous';
-    if (reportCount > 5 || reputationScore < 30) return 'suspicious';
-    if (reportCount > 0 || reputationScore < 60) return 'unknown';
+/**
+ * REPUTATION SCORING ALGORITHM (0-100):
+ * - 0-30 (Dangerous): Multiple confirmed phishing reports
+ * - 31-60 (Suspicious): Few reports or unknown origin
+ * - 61-100 (Safe): Verified legitimate sources
+ */
+
+// High-risk countries with historically higher phishing rates
+const HIGH_RISK_COUNTRIES = ['RU', 'CN', 'NG', 'RO', 'UA', 'BR', 'IN', 'PK'];
+const MEDIUM_RISK_COUNTRIES = ['VN', 'ID', 'PH', 'TH', 'EG', 'MA', 'KE'];
+
+// Calculate comprehensive reputation score (0-100)
+function calculateReputationScore(reportCount, isBlacklisted, country) {
+    let score = 100;
+    
+    // Blacklisted IPs get lowest score
+    if (isBlacklisted) return 0;
+    
+    // Deduct points for each report (10 points per report, max 70 deduction)
+    score -= Math.min(reportCount * 10, 70);
+    
+    // Geographic risk factor adjustment
+    if (HIGH_RISK_COUNTRIES.includes(country)) {
+        score -= 15; // Higher risk countries
+    } else if (MEDIUM_RISK_COUNTRIES.includes(country)) {
+        score -= 8; // Medium risk countries
+    }
+    
+    // Ensure score stays within 0-100
+    return Math.max(0, Math.min(100, score));
+}
+
+// Calculate threat level based on reputation score and other factors
+function calculateThreatLevel(reportCount, isBlacklisted, reputationScore, country) {
+    // Score-based classification per the algorithm:
+    // 0-30: Dangerous
+    // 31-60: Suspicious
+    // 61-100: Safe
+    
+    if (isBlacklisted || reputationScore <= 30) {
+        return 'dangerous';
+    }
+    if (reputationScore <= 60 || (reportCount >= 3 && HIGH_RISK_COUNTRIES.includes(country))) {
+        return 'suspicious';
+    }
     return 'safe';
 }
 
-// Calculate reputation score
-function calculateReputationScore(reportCount, isBlacklisted) {
-    if (isBlacklisted) return 0;
-    return Math.max(0, 100 - (reportCount * 10));
+// Get threat classification details
+function getThreatClassification(ipData) {
+    return {
+        reputation_score: ipData.reputation_score,
+        threat_level: ipData.threat_level,
+        report_count: ipData.report_count,
+        is_blacklisted: ipData.is_blacklisted,
+        geographic_risk: HIGH_RISK_COUNTRIES.includes(ipData.country) ? 'high' : 
+                        MEDIUM_RISK_COUNTRIES.includes(ipData.country) ? 'medium' : 'low',
+        classification: {
+            score_range: ipData.reputation_score <= 30 ? '0-30 (Dangerous)' :
+                        ipData.reputation_score <= 60 ? '31-60 (Suspicious)' : '61-100 (Safe)',
+            description: ipData.reputation_score <= 30 ? 'Multiple confirmed phishing reports' :
+                        ipData.reputation_score <= 60 ? 'Few reports or unknown origin' : 'Verified legitimate source'
+        }
+    };
 }
 
 // Analyze IP address
@@ -78,21 +130,29 @@ exports.analyzeIP = async (req, res) => {
         // Fetch from IPinfo API
         const ipInfo = await getIPInfo(address);
         
-        // Create new IP intelligence record
+        // Create new IP intelligence record with proper scoring
+        const country = ipInfo.country || 'Unknown';
+        const reportCount = 0;
+        const isBlacklisted = false;
+        const reputationScore = calculateReputationScore(reportCount, isBlacklisted, country);
+        const threatLevel = calculateThreatLevel(reportCount, isBlacklisted, reputationScore, country);
+        
         const newIPData = {
             id: ipIntelligenceData.length + 1,
             ip_address: address,
-            country: ipInfo.country || 'Unknown',
+            country: country,
             city: ipInfo.city || 'Unknown',
             region: ipInfo.region || 'Unknown',
             isp: ipInfo.org || 'Unknown',
             location: ipInfo.loc || '0,0',
             postal: ipInfo.postal || 'Unknown',
             timezone: ipInfo.timezone || 'Unknown',
-            threat_level: 'safe',
-            reputation_score: 75,
-            report_count: 0,
-            is_blacklisted: false,
+            threat_level: threatLevel,
+            reputation_score: reputationScore,
+            report_count: reportCount,
+            is_blacklisted: isBlacklisted,
+            geographic_risk: HIGH_RISK_COUNTRIES.includes(country) ? 'high' : 
+                            MEDIUM_RISK_COUNTRIES.includes(country) ? 'medium' : 'low',
             last_seen: new Date().toISOString(),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -103,6 +163,7 @@ exports.analyzeIP = async (req, res) => {
         res.json({
             success: true,
             data: newIPData,
+            threat_classification: getThreatClassification(newIPData),
             source: 'api',
             raw_data: ipInfo
         });

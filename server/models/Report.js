@@ -1,15 +1,28 @@
 const pool = require('../config/database');
 
+// Generate unique tracking number like RPT-2024-0001
+const generateTrackingNumber = async () => {
+  const year = new Date().getFullYear();
+  try {
+    const result = await pool.query('SELECT COUNT(*) FROM reports');
+    const count = parseInt(result.rows[0].count) + 1;
+    return `RPT-${year}-${String(count).padStart(4, '0')}`;
+  } catch {
+    return `RPT-${year}-${Date.now().toString().slice(-4)}`;
+  }
+};
+
 const Report = {
   async create(report) {
     const { reportedBy, emailSubject, senderEmail, emailBody, reportType, suspiciousLinks, ipAddress, severity } = report;
     try {
+      const trackingNumber = await generateTrackingNumber();
       const result = await pool.query(
-        `INSERT INTO reports ("reportedBy", subject, "senderEmail", "emailBody", "reportType", "suspiciousUrls", "ipAddress", status, severity)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8) RETURNING *`,
-        [reportedBy, emailSubject, senderEmail, emailBody, reportType || 'phishing', JSON.stringify(suspiciousLinks || []), ipAddress, severity || 'medium']
+        `INSERT INTO reports ("reportedBy", subject, "senderEmail", "emailBody", "reportType", "suspiciousUrls", "ipAddress", status, severity, "trackingNumber")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9) RETURNING *`,
+        [reportedBy, emailSubject, senderEmail, emailBody, reportType || 'phishing', JSON.stringify(suspiciousLinks || []), ipAddress, severity || 'medium', trackingNumber]
       );
-      console.log('✅ Report created:', result.rows[0].id);
+      console.log('✅ Report created:', trackingNumber);
       return result.rows[0];
     } catch (err) {
       console.error('Report create error:', err.message);
@@ -19,6 +32,11 @@ const Report = {
 
   async findById(id) {
     const result = await pool.query('SELECT * FROM reports WHERE id = $1', [id]);
+    return result.rows[0];
+  },
+
+  async findByTrackingNumber(trackingNumber) {
+    const result = await pool.query('SELECT * FROM reports WHERE "trackingNumber" = $1', [trackingNumber]);
     return result.rows[0];
   },
 
