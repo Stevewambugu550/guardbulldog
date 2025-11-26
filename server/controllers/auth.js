@@ -272,3 +272,72 @@ exports.changePassword = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// Google OAuth Sign In
+exports.googleAuth = async (req, res) => {
+  try {
+    const { credential } = req.body;
+    
+    if (!credential) {
+      return res.status(400).json({ message: 'Google credential is required' });
+    }
+
+    // Decode the Google JWT token (in production, verify with Google's API)
+    const base64Url = credential.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
+      '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+    ).join(''));
+    const googleUser = JSON.parse(jsonPayload);
+
+    const { email, given_name, family_name, picture } = googleUser;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email not found in Google account' });
+    }
+
+    // Check if user exists
+    let user = await User.findByEmail(email);
+
+    if (!user) {
+      // Create new user from Google account
+      const randomPassword = Math.random().toString(36).slice(-12);
+      const salt = await bcrypt.genSalt(12);
+      const hashedPassword = await bcrypt.hash(randomPassword, salt);
+
+      user = await User.create({
+        firstName: given_name || 'Google',
+        lastName: family_name || 'User',
+        email,
+        password: hashedPassword,
+        role: 'user',
+        department: 'Not Specified'
+      });
+    }
+
+    // Generate JWT token
+    const payload = {
+      user: {
+        id: user.id,
+        role: user.role,
+        email: user.email
+      }
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET || 'guardbulldog_default_secret_key_2024', { expiresIn: '7d' });
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    console.error('Google auth error:', err);
+    res.status(500).json({ message: 'Google authentication failed' });
+  }
+};

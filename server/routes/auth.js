@@ -58,4 +58,9 @@ router.put(
   authController.changePassword
 );
 
+// @route   POST api/auth/google
+// @desc    Google OAuth Sign In
+// @access  Public
+router.post('/google', authController.googleAuth);
+
 module.exports = router;
