@@ -94,6 +94,7 @@ app.use('/api/guest', require('./routes/guestRoutes'));
 app.use('/api/intelligence', require('./routes/intelligenceRoutes'));
 app.use('/api/education', require('./routes/education'));
 app.use('/api/inquiry', require('./routes/inquiry'));
+app.use('/api/messages', require('./routes/messages'));
 
 // 404 Handler for API routes
 app.use('/api/*', (req, res) => {

@@ -27,23 +27,39 @@ const Navbar = ({ onMobileMenuToggle, isMobileMenuOpen }) => {
   const userMenuRef = useRef(null);
   const notificationRef = useRef(null);
 
-  // Generate dynamic notifications
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+  // Fetch real messages as notifications
   useEffect(() => {
-    const generateNotifications = () => {
-      const now = new Date();
-      const types = [
-        { icon: '🚨', title: 'Phishing Alert', messages: ['New phishing campaign targeting students', 'Suspicious email detected from fake IT support', 'Credential harvesting attempt blocked'] },
-        { icon: '🛡️', title: 'Security Update', messages: ['Your account security was verified', 'Password protection is active', 'Two-factor authentication reminder'] },
-        { icon: '📚', title: 'Training', messages: ['New module available: Advanced Threats', 'Complete your phishing awareness training', 'Quiz reminder: Social Engineering'] },
-        { icon: '✅', title: 'Report Update', messages: ['Your report #456 has been resolved', 'Thank you for reporting - threat confirmed', 'Investigation complete on your submission'] },
-      ];
-      
-      return [
-        { id: 1, icon: '🚨', type: 'alert', title: 'Active Phishing Campaign', message: 'Be cautious of emails claiming to be from IT Support', time: formatTime(new Date(now - 1000 * 60 * 5)), unread: true },
-        { id: 2, icon: '📚', type: 'training', title: 'Training Reminder', message: 'You have 3 incomplete security modules', time: formatTime(new Date(now - 1000 * 60 * 30)), unread: true },
-        { id: 3, icon: '✅', type: 'success', title: 'Report Resolved', message: 'Your phishing report was confirmed & blocked', time: formatTime(new Date(now - 1000 * 60 * 60 * 2)), unread: true },
-        { id: 4, icon: '🛡️', type: 'info', title: 'Security Tip', message: 'Always verify sender email addresses', time: formatTime(new Date(now - 1000 * 60 * 60 * 5)), unread: false },
-      ];
+    const fetchMessages = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        const res = await fetch(`${API_URL}/api/messages`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          const msgs = data.messages || [];
+          
+          // Convert messages to notifications
+          const notifs = msgs.slice(0, 5).map(m => ({
+            id: m.id,
+            icon: '💬',
+            type: 'message',
+            title: m.subject || 'New Message',
+            message: m.content?.substring(0, 50) + (m.content?.length > 50 ? '...' : ''),
+            time: formatTime(new Date(m.created_at)),
+            unread: !m.is_read
+          }));
+          
+          setNotifications(notifs);
+        }
+      } catch (err) {
+        console.log('Fetch messages:', err.message);
+      }
     };
 
     const formatTime = (date) => {
@@ -52,38 +68,13 @@ const Navbar = ({ onMobileMenuToggle, isMobileMenuOpen }) => {
       if (diff < 60000) return 'Just now';
       if (diff < 3600000) return `${Math.floor(diff / 60000)} min ago`;
       if (diff < 86400000) return `${Math.floor(diff / 3600000)} hours ago`;
-      return 'Yesterday';
+      return date.toLocaleDateString();
     };
 
-    setNotifications(generateNotifications());
-
-    // Add new notifications periodically
-    const interval = setInterval(() => {
-      const newAlerts = [
-        { icon: '🚨', title: 'New Threat Detected', message: 'Suspicious link blocked from your email' },
-        { icon: '📊', title: 'Weekly Report', message: 'Your security summary is ready' },
-        { icon: '⚡', title: 'Quick Alert', message: 'New phishing pattern identified' },
-        { icon: '🎓', title: 'Course Update', message: 'New content added to training modules' },
-      ];
-      const random = newAlerts[Math.floor(Math.random() * newAlerts.length)];
-      
-      setNotifications(prev => [{
-        id: Date.now(),
-        icon: random.icon,
-        type: 'new',
-        title: random.title,
-        message: random.message,
-        time: 'Just now',
-        unread: true
-      }, ...prev.slice(0, 4)]);
-      
-      // Animate bell
-      setBellAnimation(true);
-      setTimeout(() => setBellAnimation(false), 1000);
-    }, 45000); // Every 45 seconds
-
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 30000); // Check every 30s
     return () => clearInterval(interval);
-  }, []);
+  }, [API_URL]);
 
   // Close menus when clicking outside
   useEffect(() => {

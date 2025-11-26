@@ -1,112 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
 import {
   DocumentTextIcon,
   ShieldCheckIcon,
-  ChartBarIcon,
   ExclamationTriangleIcon,
   BellIcon,
   AcademicCapIcon,
   MagnifyingGlassIcon,
   ClockIcon,
   CheckCircleIcon,
-  XCircleIcon,
-  InformationCircleIcon
+  ChatBubbleLeftIcon
 } from '@heroicons/react/24/outline';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [threats, setThreats] = useState([]);
   const [stats, setStats] = useState({ reports: 0, pending: 0, resolved: 0 });
   const [loading, setLoading] = useState(true);
 
-  // Generate dynamic notifications
   useEffect(() => {
-    const generateNotifications = () => {
-      const now = new Date();
-      const notifs = [
-        {
-          id: 1,
-          type: 'alert',
-          icon: ExclamationTriangleIcon,
-          color: 'text-red-500 bg-red-50',
-          title: '⚠️ Active Phishing Campaign Detected',
-          message: 'Be cautious of emails claiming to be from "IT Support" requesting password resets.',
-          time: new Date(now - 1000 * 60 * 30).toLocaleTimeString(), // 30 min ago
-          isNew: true
-        },
-        {
-          id: 2,
-          type: 'info',
-          icon: InformationCircleIcon,
-          color: 'text-blue-500 bg-blue-50',
-          title: '📚 New Training Module Available',
-          message: 'Complete the "Advanced Phishing Techniques" module to earn your certificate.',
-          time: new Date(now - 1000 * 60 * 60 * 2).toLocaleTimeString(), // 2 hours ago
-          isNew: true
-        },
-        {
-          id: 3,
-          type: 'success',
-          icon: CheckCircleIcon,
-          color: 'text-green-500 bg-green-50',
-          title: '✅ Report #456 Resolved',
-          message: 'Your phishing report has been investigated and confirmed as malicious.',
-          time: new Date(now - 1000 * 60 * 60 * 5).toLocaleTimeString(), // 5 hours ago
-          isNew: false
-        },
-        {
-          id: 4,
-          type: 'warning',
-          icon: BellIcon,
-          color: 'text-yellow-500 bg-yellow-50',
-          title: '🔔 Security Update Required',
-          message: 'Please update your security settings in your profile.',
-          time: 'Yesterday',
-          isNew: false
-        },
-        {
-          id: 5,
-          type: 'info',
-          icon: AcademicCapIcon,
-          color: 'text-purple-500 bg-purple-50',
-          title: '🎓 Training Reminder',
-          message: 'You have 3 incomplete modules in the Education Center.',
-          time: 'Yesterday',
-          isNew: false
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = { 'Authorization': `Bearer ${token}` };
+
+        // Fetch user reports
+        const reportsRes = await fetch(`${API_URL}/api/reports/user`, { headers });
+        if (reportsRes.ok) {
+          const data = await reportsRes.json();
+          const reps = data.reports || data || [];
+          setReports(reps);
+          setStats({
+            reports: reps.length,
+            pending: reps.filter(r => r.status === 'pending').length,
+            resolved: reps.filter(r => r.status === 'resolved').length
+          });
         }
-      ];
-      setNotifications(notifs);
+
+        // Fetch messages
+        const msgsRes = await fetch(`${API_URL}/api/messages`, { headers });
+        if (msgsRes.ok) {
+          const data = await msgsRes.json();
+          setMessages(data.messages || []);
+        }
+
+        // Fetch live threats
+        const threatsRes = await fetch(`${API_URL}/api/intelligence/threats`, { headers });
+        if (threatsRes.ok) {
+          const data = await threatsRes.json();
+          setThreats(data.threats || data || []);
+        }
+      } catch (err) {
+        console.log('Dashboard fetch:', err.message);
+      }
+      setLoading(false);
     };
 
-    generateNotifications();
-    
-    // Add new notification periodically
-    const interval = setInterval(() => {
-      const randomAlerts = [
-        { title: '🛡️ System Update', message: 'Security systems updated successfully' },
-        { title: '📊 Weekly Report', message: 'Your weekly security summary is ready' },
-        { title: '⚡ Quick Tip', message: 'Always verify sender email addresses before clicking links' }
-      ];
-      const random = randomAlerts[Math.floor(Math.random() * randomAlerts.length)];
-      setNotifications(prev => [{
-        id: Date.now(),
-        type: 'info',
-        icon: BellIcon,
-        color: 'text-blue-500 bg-blue-50',
-        title: random.title,
-        message: random.message,
-        time: 'Just now',
-        isNew: true
-      }, ...prev.slice(0, 4)]);
-    }, 60000); // Every minute
-
-    setLoading(false);
-    return () => clearInterval(interval);
+    fetchData();
   }, []);
 
   const quickStats = [
@@ -123,10 +78,14 @@ const Dashboard = () => {
     { to: '/app/my-reports', icon: DocumentTextIcon, title: 'My Reports', desc: 'Track your submissions', bg: 'bg-green-50 hover:bg-green-100', iconColor: 'text-green-600' },
   ];
 
-  const recentThreats = [
-    { type: 'Credential Phishing', target: 'University Email', severity: 'High', time: '2 hours ago' },
-    { type: 'Invoice Fraud', target: 'Finance Dept', severity: 'Medium', time: '5 hours ago' },
-    { type: 'Malware Link', target: 'Student Portal', severity: 'High', time: 'Yesterday' },
+  // Use real threats or show placeholder if none
+  const recentThreats = threats.length > 0 ? threats.slice(0, 3).map(t => ({
+    type: t.type || t.threat_type || 'Unknown Threat',
+    target: t.target || 'General',
+    severity: t.severity || 'Medium',
+    time: t.createdAt ? new Date(t.createdAt).toLocaleDateString() : 'Recent'
+  })) : [
+    { type: 'No active threats', target: 'System is secure', severity: 'Low', time: 'Now' }
   ];
 
   return (
@@ -162,34 +121,45 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Notifications */}
+        {/* Messages from Admin */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-900 flex items-center">
-              <BellIcon className="h-5 w-5 mr-2 text-blue-600" />
-              Notifications
-              <span className="ml-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                {notifications.filter(n => n.isNew).length} new
-              </span>
+              <ChatBubbleLeftIcon className="h-5 w-5 mr-2 text-blue-600" />
+              Messages
+              {messages.filter(m => !m.is_read).length > 0 && (
+                <span className="ml-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  {messages.filter(m => !m.is_read).length} new
+                </span>
+              )}
             </h2>
-            <button className="text-sm text-blue-600 hover:underline">Mark all read</button>
           </div>
           <div className="space-y-3 max-h-80 overflow-y-auto">
-            {notifications.map(notif => (
-              <div key={notif.id} className={`p-4 rounded-lg ${notif.color} ${notif.isNew ? 'ring-2 ring-blue-200' : ''}`}>
-                <div className="flex items-start">
-                  <notif.icon className={`h-5 w-5 mt-0.5 mr-3 ${notif.color.split(' ')[0]}`} />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-gray-900 text-sm">{notif.title}</h3>
-                      {notif.isNew && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">New</span>}
+            {messages.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <ChatBubbleLeftIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <p>No messages yet</p>
+                <p className="text-sm">Admin messages will appear here</p>
+              </div>
+            ) : (
+              messages.slice(0, 5).map(msg => (
+                <div key={msg.id} className={`p-4 rounded-lg ${msg.is_read ? 'bg-gray-50' : 'bg-blue-50 ring-2 ring-blue-200'}`}>
+                  <div className="flex items-start">
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
+                      {msg.sender_first_name?.[0] || 'A'}
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">{notif.message}</p>
-                    <p className="text-xs text-gray-400 mt-2">{notif.time}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-gray-900 text-sm">{msg.subject || 'Message'}</h3>
+                        {!msg.is_read && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">New</span>}
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">{msg.content?.substring(0, 100)}</p>
+                      <p className="text-xs text-gray-400 mt-2">{msg.created_at ? new Date(msg.created_at).toLocaleDateString() : ''}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
