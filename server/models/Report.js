@@ -14,15 +14,16 @@ const generateTrackingNumber = async () => {
 
 const Report = {
   async create(report) {
-    const { reportedBy, emailSubject, senderEmail, emailBody, reportType, suspiciousLinks, ipAddress, severity } = report;
+    const { reportedBy, trackingNumber, emailSubject, senderEmail, senderName, emailBody, emailHeaders, reportType, severity, attachments, ipAddress } = report;
     try {
-      const trackingNumber = await generateTrackingNumber();
+      // Use provided tracking number or generate one
+      const finalTrackingNumber = trackingNumber || await generateTrackingNumber();
       const result = await pool.query(
-        `INSERT INTO reports ("reportedBy", subject, "senderEmail", "emailBody", "reportType", "suspiciousUrls", "ipAddress", status, severity, "trackingNumber")
+        `INSERT INTO reports ("reportedBy", subject, "senderEmail", "emailBody", "emailHeaders", "reportType", "ipAddress", status, severity, "trackingNumber")
          VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9) RETURNING *`,
-        [reportedBy, emailSubject, senderEmail, emailBody, reportType || 'phishing', JSON.stringify(suspiciousLinks || []), ipAddress, severity || 'medium', trackingNumber]
+        [reportedBy, emailSubject, senderEmail, emailBody, emailHeaders || null, reportType || 'phishing', ipAddress || null, severity || 'medium', finalTrackingNumber]
       );
-      console.log('✅ Report created:', trackingNumber);
+      console.log('✅ Report created:', finalTrackingNumber);
       return result.rows[0];
     } catch (err) {
       console.error('Report create error:', err.message);

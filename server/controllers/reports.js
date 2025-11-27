@@ -9,20 +9,27 @@ exports.submitReport = async (req, res) => {
   }
 
   try {
-    const { emailSubject, senderEmail, emailBody, reportType, suspiciousLinks } = req.body;
+    const { emailSubject, senderEmail, senderName, emailContent, emailHeaders, reportType, severity } = req.body;
+    
+    // Generate tracking number
+    const trackingNumber = 'RPT-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
     
     const report = await Report.create({
       reportedBy: req.user.id,
+      trackingNumber,
       emailSubject,
       senderEmail,
-      emailBody,
+      senderName: senderName || null,
+      emailBody: emailContent,
+      emailHeaders: emailHeaders || null,
       reportType,
-      suspiciousLinks: suspiciousLinks || null,
+      severity: severity || 'medium',
       attachments: req.files ? JSON.stringify(req.files.map(f => f.filename)) : null
     });
 
     res.status(201).json({
       message: 'Report submitted successfully',
+      reportId: trackingNumber,
       report
     });
   } catch (err) {

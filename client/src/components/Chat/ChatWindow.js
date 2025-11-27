@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
 
+const API_URL = process.env.REACT_APP_API_URL || '';
+
 const ChatWindow = ({ closeChat }) => {
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Welcome! How can I help you today?' },
+    { role: 'assistant', content: 'Welcome to GUARDBULLDOG Support! 🛡️ How can I help you with phishing protection today?' },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +30,9 @@ const ChatWindow = ({ closeChat }) => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('/api/chat', {
+      // Try Netlify function first, then fallback to local API
+      const chatEndpoint = API_URL ? `${API_URL}/api/chat` : '/.netlify/functions/chat';
+      const response = await axios.post(chatEndpoint, {
         message: input,
         history: messages,
       });
@@ -38,7 +42,7 @@ const ChatWindow = ({ closeChat }) => {
       if (aiResponse === 'AGENT_ESCALATION') {
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', content: 'It looks like you need more help. I am connecting you to a live agent...' },
+          { role: 'assistant', content: 'It looks like you need more help. I am connecting you to a live agent. Please email security@bowie.edu for immediate assistance.' },
         ]);
       } else {
         setMessages((prev) => [
@@ -47,9 +51,17 @@ const ChatWindow = ({ closeChat }) => {
         ]);
       }
     } catch (error) {
+      console.error('Chat error:', error);
+      // Provide helpful fallback responses
+      const fallbackResponses = [
+        "I can help you with phishing-related questions! Common signs of phishing include:\n• Urgent requests for personal information\n• Suspicious sender email addresses\n• Misspelled words or poor grammar\n• Links that don't match the displayed text",
+        "To report a phishing email, go to 'Report Phishing' in the dashboard and provide details about the suspicious email including the sender's address and any suspicious links.",
+        "If you suspect you've been phished, immediately change your password, enable two-factor authentication, and report the incident to IT Security at security@bowie.edu"
+      ];
+      const randomResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: 'Sorry, I am having trouble connecting. Please try again later.' },
+        { role: 'assistant', content: randomResponse },
       ]);
     } finally {
       setIsLoading(false);

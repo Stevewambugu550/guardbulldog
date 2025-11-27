@@ -72,10 +72,10 @@ const Dashboard = () => {
   ];
 
   const quickActions = [
-    { to: '/app/report', icon: ExclamationTriangleIcon, title: 'Report Phishing', desc: 'Submit suspicious email', bg: 'bg-red-50 hover:bg-red-100', iconColor: 'text-red-600' },
+    { to: '/app/report-phishing', icon: ExclamationTriangleIcon, title: 'Report Phishing', desc: 'Submit suspicious email', bg: 'bg-red-50 hover:bg-red-100', iconColor: 'text-red-600' },
     { to: '/app/education', icon: AcademicCapIcon, title: 'Education Center', desc: '10 modules with quizzes', bg: 'bg-blue-50 hover:bg-blue-100', iconColor: 'text-blue-600' },
-    { to: '/app/intelligence', icon: MagnifyingGlassIcon, title: 'Threat Intelligence', desc: 'View threat analytics', bg: 'bg-purple-50 hover:bg-purple-100', iconColor: 'text-purple-600' },
     { to: '/app/my-reports', icon: DocumentTextIcon, title: 'My Reports', desc: 'Track your submissions', bg: 'bg-green-50 hover:bg-green-100', iconColor: 'text-green-600' },
+    { to: '/app/profile', icon: ShieldCheckIcon, title: 'My Profile', desc: 'Manage your account', bg: 'bg-purple-50 hover:bg-purple-100', iconColor: 'text-purple-600' },
   ];
 
   // Use real threats or show placeholder if none

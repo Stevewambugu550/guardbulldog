@@ -118,6 +118,19 @@ const User = {
       console.log('Update user error:', err.message);
       return null;
     }
+  },
+
+  async updatePassword(userId, hashedPassword) {
+    try {
+      const result = await pool.query(
+        'UPDATE users SET password = $1 WHERE id = $2 RETURNING *',
+        [hashedPassword, userId]
+      );
+      return result.rows[0];
+    } catch (err) {
+      console.log('Update password error:', err.message);
+      return null;
+    }
   }
 };
 

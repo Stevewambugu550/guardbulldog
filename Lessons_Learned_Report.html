@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lessons Learned Report - GUARDBULLDOG</title>
+    <style>
+        @page {
+            margin: 1in;
+            size: letter;
+        }
+        
+        body {
+            font-family: "Times New Roman", Times, serif;
+            font-size: 12pt;
+            line-height: 2;
+            max-width: 8.5in;
+            margin: 0 auto;
+            padding: 1in;
+            color: #000;
+            background: #fff;
+        }
+        
+        .title-page {
+            text-align: center;
+            page-break-after: always;
+            padding-top: 2in;
+        }
+        
+        .title-page h1 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 24pt;
+            line-height: 2;
+        }
+        
+        .title-page p {
+            margin: 0;
+            line-height: 2;
+        }
+        
+        h2 {
+            font-size: 12pt;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 24pt;
+            margin-bottom: 12pt;
+        }
+        
+        h3 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-top: 18pt;
+            margin-bottom: 12pt;
+            text-indent: 0;
+        }
+        
+        p {
+            text-indent: 0.5in;
+            margin: 0 0 12pt 0;
+            text-align: justify;
+        }
+        
+        .no-indent {
+            text-indent: 0;
+        }
+        
+        .references {
+            page-break-before: always;
+        }
+        
+        .references h2 {
+            text-align: center;
+        }
+        
+        .references p {
+            text-indent: -0.5in;
+            padding-left: 0.5in;
+            margin-bottom: 12pt;
+        }
+        
+        .page-header {
+            text-align: right;
+            font-size: 12pt;
+            margin-bottom: 24pt;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+            .title-page {
+                padding-top: 3in;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="title-page">
+    <h1>Lessons Learned Report: GUARDBULLDOG Phishing Awareness and Reporting System</h1>
+    <p>Victory Ubogu</p>
+    <p>Bowie State University</p>
+    <p>INSS780-400: Information Systems Practicum 1</p>
+    <p>Fall 2025</p>
+</div>
+
+<h2>Project Overview</h2>
+
+<p>Our team embarked on developing a cybersecurity platform that would serve a genuine need within our campus community. Phishing attacks have become one of the most prevalent threats facing educational institutions today, with universities experiencing a significant increase in targeted attacks over recent years (OWASP Foundation, 2021). Recognizing this growing concern at Bowie State University, we conceptualized GUARDBULLDOG as a comprehensive web-based application where students, faculty, and staff could report suspicious emails, track the status of their reports, and educate themselves about emerging cyber threats.</p>
+
+<p>The name GUARDBULLDOG was deliberately chosen to embody our university mascot while conveying the protective nature of the system. We wanted every member of our campus to feel empowered in the fight against phishing rather than feeling like passive victims waiting for IT staff to solve problems on their behalf. From the earliest planning discussions, our vision centered on creating something that was not only technically sound but also accessible to users regardless of their technical background.</p>
+
+<p>Our development team brought together five individuals with complementary skill sets. Ashleigh Mosley assumed the role of System Project Manager, coordinating timelines, facilitating communication between team members, and serving as our primary liaison with faculty advisors. Amanda Burroughs contributed as our System Designer and Architect, making foundational decisions about technology choices and ensuring our design could scale appropriately. Enrique Wallace handled system implementation responsibilities including server configuration, deployment pipelines, and integration testing. Moustapha Thiam served as our System Analyst and Tester, gathering requirements from potential users, designing test cases, and maintaining project documentation. My role as System Developer involved writing the application code, designing the database schema, implementing API endpoints, and integrating third-party services.</p>
+
+<p>The technical architecture underlying GUARDBULLDOG reflects current industry practices for modern web application development. Our frontend was constructed using React.js version 18.2, a component-based JavaScript library that enables the creation of dynamic and responsive user interfaces (React Documentation, 2024). We selected Tailwind CSS as our styling framework because it offered utility-first classes that accelerated development without sacrificing design flexibility. For client-side routing and navigation, we implemented React Router version 6, which allowed users to move seamlessly between different sections of the application without full page reloads.</p>
+
+<p>The backend infrastructure runs on Node.js with Express.js serving as our web application framework. This combination has become standard in the industry due to its performance characteristics and the ability to use JavaScript across both frontend and backend codebases (Pressman & Maxim, 2020). We chose PostgreSQL as our relational database management system after considerable deliberation. While document-based databases like MongoDB offer flexibility, our requirements for complex queries, strong data integrity through foreign key relationships, and comprehensive audit logging made PostgreSQL the more appropriate choice for this particular application.</p>
+
+<p>Security considerations influenced nearly every architectural decision. User authentication relies on JSON Web Tokens with a seven-day expiration period, providing stateless session management that scales well across distributed systems. Password storage implements bcrypt hashing with twelve salt rounds, ensuring that even if our database were compromised, user credentials would remain protected. We incorporated Helmet.js middleware to set appropriate HTTP security headers and configured CORS policies to prevent unauthorized cross-origin requests.</p>
+
+<p>Perhaps our most distinctive feature is the integration of artificial intelligence through the OpenAI GPT-4 API. We developed an AI-powered chatbot capable of answering cybersecurity questions in natural language, helping users evaluate whether specific emails appear suspicious, and providing personalized educational content based on user queries. This feature required substantial development effort but significantly enhanced the overall user experience by providing immediate assistance without requiring human intervention.</p>
+
+<h2>Reflections on the System Development Lifecycle</h2>
+
+<p>The journey from initial concept to functional application provided invaluable learning experiences that extended far beyond technical skill development. Each phase of the system development lifecycle presented unique challenges that forced our team to adapt, communicate, and problem-solve in ways that classroom exercises simply cannot replicate (Sommerville, 2016).</p>
+
+<p>Our planning phase consumed more time than originally anticipated, though this investment proved worthwhile throughout subsequent development. Initial team discussions revealed that each member held different assumptions about what the final product should accomplish. Reaching consensus required structured conversations where we explicitly documented requirements rather than assuming shared understanding. We categorized features into essential functionality versus desirable enhancements, recognizing that time constraints would likely prevent implementing everything we imagined. Core requirements included multi-role user authentication supporting students, faculty, administrators, and super administrators with appropriate permission levels for each role. We prioritized a phishing report submission system allowing users to document suspicious emails with supporting evidence, an administrative dashboard providing security staff with tools to review and investigate reports, and educational modules delivering training content about recognizing and responding to phishing attempts.</p>
+
+<p>The design phase transformed abstract requirements into concrete technical specifications. Amanda led efforts to create system architecture diagrams illustrating how frontend components would communicate with backend services, how data would flow between the user interface and database, and how external services like the OpenAI API would integrate into our ecosystem. Database schema design sparked particularly detailed discussions. We needed tables for users with role designations, tables for phishing reports with status tracking, junction tables for administrative notes attached to reports, and additional tables supporting educational modules and user progress tracking. Defining relationships between these entities required careful consideration of foreign key constraints, cascade behaviors for deletions, and indexing strategies to maintain query performance as data volumes grew.</p>
+
+<p>Implementation proceeded through an agile methodology organized into two-week sprints with defined deliverables for each iteration. The first sprint concentrated on authentication infrastructure and basic user management. Building a secure login system from scratch illuminated just how many edge cases exist in something that seems conceptually straightforward. We needed to validate email formats, enforce password complexity requirements, handle failed login attempts gracefully, return appropriate error messages without revealing sensitive information, and manage token refresh logic for extended sessions. When our initial implementation exhibited vulnerabilities during peer review, we returned to documentation and security best practices to strengthen our approach.</p>
+
+<p>The second sprint focused on the phishing report submission system and user dashboard functionality. Implementing file upload capabilities for evidence attachments introduced complexity we had not fully anticipated during planning. Users needed the ability to submit screenshots, forwarded email files, and PDF documents alongside their written descriptions. Integrating Multer middleware for multipart form handling required modifications to several components we had considered complete. This experience reinforced the importance of thoroughly mapping user workflows before beginning implementation rather than discovering requirements incrementally.</p>
+
+<p>Sprint three tackled our most ambitious feature, the AI chatbot integration. Connecting to external APIs appeared deceptively simple based on documentation examples, but production implementation revealed numerous considerations. We needed to craft system prompts that kept AI responses focused on cybersecurity topics relevant to our university context. Managing conversation history required balancing context retention against API token limits and cost considerations. Implementing graceful fallbacks for API failures or rate limiting ensured users would not encounter dead ends. We iterated through dozens of prompt variations before achieving consistent, helpful responses that aligned with our educational objectives.</p>
+
+<p>The fourth and final sprint concentrated on refinement, testing, and deployment preparation. Moustapha executed comprehensive test cases covering authentication flows, report submission scenarios, administrative functions, and edge cases identified during development. Testing revealed problems we had overlooked, including form validation failures with special characters, inconsistent styling across different browsers, and responsive design breakpoints that functioned poorly on certain mobile device sizes. Each discovered issue required diagnosis, correction, and retesting before we could consider the feature complete.</p>
+
+<h2>Successes, Challenges, Solutions, and Areas for Improvement</h2>
+
+<p>Evaluating our project outcomes honestly requires acknowledging both achievements and shortcomings. Several aspects of GUARDBULLDOG exceeded our initial expectations while other areas fell short of what we had envisioned.</p>
+
+<h3>Successes</h3>
+
+<p>Our role-based access control implementation stands as a significant success. The system cleanly separates permissions across four distinct user roles, ensuring students can submit and track their own reports while administrators access investigation tools and super administrators manage system-wide settings. Middleware protecting API endpoints consistently enforces these boundaries, preventing unauthorized access regardless of how requests are constructed. This architecture follows security principles emphasizing defense in depth rather than relying on frontend restrictions alone (OWASP Foundation, 2021).</p>
+
+<p>The PostgreSQL database schema has proven robust across all testing scenarios. Referential integrity constraints prevent orphaned records, timestamp fields maintain accurate audit trails, and our indexing strategy keeps query response times acceptable even with substantial test data volumes. The decision to invest time in proper database design rather than rushing to implementation paid dividends throughout development as we rarely encountered data-related bugs.</p>
+
+<p>User interface feedback during testing sessions exceeded expectations. Participants consistently described navigation as intuitive and appreciated visual feedback during form submissions. The color scheme incorporating gold and navy reflects university branding while maintaining professional aesthetics appropriate for a security-focused application. Error messages communicate problems in plain language rather than technical codes, reducing user frustration and support requests.</p>
+
+<p>Our deployment architecture utilizing Netlify for frontend hosting and serverless functions simplified operational concerns considerably. Continuous deployment triggered by GitHub repository changes eliminates manual deployment steps and associated human error potential. Environment variable management keeps sensitive configuration like database credentials and API keys separated from source code.</p>
+
+<h3>Challenges and Solutions</h3>
+
+<p>The challenges we encountered provided equally valuable learning opportunities. Database migration from SQLite used during local development to PostgreSQL for production deployment revealed syntax differences and connection management issues we had not anticipated. Queries that functioned correctly in testing failed in production due to subtle differences in how each database handled certain operations. Resolving this required systematic review of every database interaction and creation of an abstraction layer that isolated database-specific details from application logic.</p>
+
+<p>Authentication security evolved substantially throughout development. Initial implementations contained vulnerabilities including insufficient password hashing, improper token validation, and missing protection against brute force attacks. Each security review revealed additional weaknesses requiring attention. We implemented progressive account lockout after failed login attempts, added comprehensive input validation and sanitization, and ensured error messages did not leak information useful to attackers. This iterative hardening process taught us that security cannot be added as an afterthought but must be considered throughout development.</p>
+
+<p>Managing OpenAI API integration introduced cost and reliability challenges. During development, uncontrolled testing accumulated unexpected charges as each API call incurred fees. We implemented response caching for frequently asked questions, added conversation length limits to prevent runaway token consumption, and built rate limiting to prevent abuse while preserving access for legitimate users. Handling API outages or degraded performance required fallback responses ensuring users always received some assistance even when the AI service was unavailable.</p>
+
+<p>Team coordination across members with different schedules and competing academic responsibilities presented ongoing difficulties. Establishing regular virtual stand-up meetings improved communication significantly. Adopting consistent commit message conventions and maintaining detailed GitHub issues for task tracking provided visibility into project status that informal communication alone could not achieve.</p>
+
+<h3>Areas for Improvement</h3>
+
+<p>Honest assessment identifies several areas requiring continued development. Automated test coverage remains incomplete, particularly for error handling paths and edge cases. Implementing comprehensive test suites using frameworks like Jest would strengthen confidence when making changes and catch regressions before they reach production.</p>
+
+<p>Educational module functionality, while present, lacks the interactive elements we originally designed. Time constraints forced us to implement basic content delivery rather than gamified learning experiences with quizzes, simulated phishing exercises, and achievement systems. Future development should prioritize expanding this section since user education represents a core mission of the platform.</p>
+
+<p>Performance optimization received insufficient attention given competing priorities. While current performance is acceptable, we have not conducted formal load testing to understand system behavior under stress. Implementing caching layers and optimizing database queries would improve scalability for broader campus deployment.</p>
+
+<p>Documentation quality varies across the codebase. Some modules contain thorough comments explaining logic and design decisions while others lack adequate explanation for future maintainers. Standardizing documentation practices and potentially generating API documentation through automated tools would benefit long-term sustainability.</p>
+
+<h2>Conclusion</h2>
+
+<p>This project transformed theoretical knowledge into practical competencies through experiences that textbook study alone cannot provide. We confronted genuine problems requiring creative solutions, made mistakes that taught lasting lessons, and ultimately delivered a functional system addressing real needs within our campus community. The system development lifecycle proved to be far messier in practice than diagrams suggest, with phases overlapping and requirements evolving as understanding deepened. Software development is fundamentally collaborative and iterative, demanding clear communication, flexibility in response to changing circumstances, and persistence through inevitable setbacks. GUARDBULLDOG represents not merely a technical achievement but evidence of effective teamwork under challenging conditions. The lessons absorbed during this project will influence how each team member approaches future professional endeavors in information systems.</p>
+
+<div class="references">
+<h2>References</h2>
+
+<p>OWASP Foundation. (2021). OWASP top ten web application security risks. https://owasp.org/www-project-top-ten/</p>
+
+<p>Pressman, R. S., & Maxim, B. R. (2020). Software engineering: A practitioner's approach (9th ed.). McGraw-Hill Education.</p>
+
+<p>React Documentation. (2024). Getting started with React. https://react.dev/learn</p>
+
+<p>Sommerville, I. (2016). Software engineering (10th ed.). Pearson.</p>
+</div>
+
+</body>
+</html>
+

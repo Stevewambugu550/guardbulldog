@@ -19,10 +19,11 @@ module.exports = function (req, res, next) {
 
   // Verify token
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'guardbulldog_default_secret_key_2024');
     req.user = decoded.user;
     next();
   } catch (err) {
+    console.error('Token verification error:', err.message);
     res.status(401).json({ message: 'Token is not valid' });
   }
 };
