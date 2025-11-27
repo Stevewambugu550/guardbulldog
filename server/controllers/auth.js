@@ -282,26 +282,32 @@ exports.googleAuth = async (req, res) => {
       return res.status(400).json({ message: 'Google credential is required' });
     }
 
-    // Decode the Google JWT token (in production, verify with Google's API)
+    // Decode the Google JWT token (Node.js compatible)
     const base64Url = credential.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
-      '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-    ).join(''));
+    const jsonPayload = Buffer.from(base64, 'base64').toString('utf8');
     const googleUser = JSON.parse(jsonPayload);
 
-    const { email, given_name, family_name, picture } = googleUser;
+    const { email, given_name, family_name, picture, email_verified } = googleUser;
 
     if (!email) {
       return res.status(400).json({ message: 'Email not found in Google account' });
     }
+
+    // Optionally verify email is from allowed domain
+    // Uncomment for production to restrict to Bowie State emails
+    // const allowedDomains = ['bowie.edu', 'bowiestate.edu', 'gmail.com'];
+    // const emailDomain = email.split('@')[1];
+    // if (!allowedDomains.includes(emailDomain)) {
+    //   return res.status(400).json({ message: 'Only Bowie State University or Gmail accounts are allowed' });
+    // }
 
     // Check if user exists
     let user = await User.findByEmail(email);
 
     if (!user) {
       // Create new user from Google account
-      const randomPassword = Math.random().toString(36).slice(-12);
+      const randomPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12);
       const salt = await bcrypt.genSalt(12);
       const hashedPassword = await bcrypt.hash(randomPassword, salt);
 
@@ -313,6 +319,9 @@ exports.googleAuth = async (req, res) => {
         role: 'user',
         department: 'Not Specified'
       });
+      console.log('✅ New user created via Google Sign-In:', email);
+    } else {
+      console.log('✅ Existing user logged in via Google:', email);
     }
 
     // Generate JWT token
@@ -333,11 +342,12 @@ exports.googleAuth = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        role: user.role
+        role: user.role,
+        picture: picture || null
       }
     });
   } catch (err) {
     console.error('Google auth error:', err);
-    res.status(500).json({ message: 'Google authentication failed' });
+    res.status(500).json({ message: 'Google authentication failed. Please try again.' });
   }
 };
