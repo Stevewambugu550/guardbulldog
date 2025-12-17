@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuardBulldog - Technical Diagrams</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 40px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #00d4ff;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 50px;
+            font-size: 1.1rem;
+        }
+        .diagram-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        .diagram-section h2 {
+            color: #00d4ff;
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+            border-bottom: 2px solid #00d4ff;
+            padding-bottom: 10px;
+        }
+        .mermaid {
+            background: #fff;
+            border-radius: 15px;
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+            overflow-x: auto;
+        }
+        .legend {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 10px;
+            border-left: 4px solid #00d4ff;
+        }
+        .legend h3 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+        }
+        .legend ul {
+            list-style: none;
+            columns: 2;
+        }
+        .legend li {
+            padding: 5px 0;
+            color: #ccc;
+        }
+        .legend li::before {
+            content: "→ ";
+            color: #00d4ff;
+        }
+        @media print {
+            body {
+                background: #fff;
+                color: #000;
+            }
+            .diagram-section {
+                background: #f5f5f5;
+                border: 1px solid #ddd;
+                page-break-inside: avoid;
+            }
+            h1, h2, h3 {
+                color: #333;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐕 GuardBulldog Technical Diagrams</h1>
+        <p class="subtitle">Campus Phishing Detection & Response Platform</p>
+
+        <!-- ERD Section -->
+        <div class="diagram-section">
+            <h2>1. Entity Relationship Diagram (ERD)</h2>
+            <div class="mermaid">
+erDiagram
+    USER {
+        uuid user_id PK
+        varchar name
+        varchar email UK
+        varchar role
+        varchar department
+        timestamp last_login
+        jsonb training_status
+        varchar external_id UK
+    }
+    
+    INCIDENT {
+        uuid incident_id PK
+        uuid reporter_user_id FK
+        varchar reporter_email
+        timestamp submission_time
+        varchar status
+        varchar priority
+        varchar category
+        text subject_line
+        text message_excerpt
+        integer risk_score
+        uuid assigned_to FK
+        jsonb tags
+        jsonb remediation_actions
+        timestamp closed_time
+    }
+    
+    ATTACHMENT {
+        uuid attachment_id PK
+        uuid incident_id FK
+        varchar filename
+        varchar content_type
+        varchar s3_key UK
+        varchar hash_sha256
+        varchar scanned_status
+        jsonb extracted_iocs
+    }
+    
+    TRAINING_MODULE {
+        uuid module_id PK
+        varchar title
+        integer duration
+        varchar content_url
+        integer passing_score
+        boolean required_flag
+    }
+    
+    QUIZ_RESULT {
+        uuid result_id PK
+        uuid user_id FK
+        uuid module_id FK
+        integer score
+        integer attempts
+        timestamp completion_time
+    }
+    
+    AUDIT_LOG {
+        bigserial log_id PK
+        uuid actor_user_id FK
+        varchar action
+        varchar entity_type
+        uuid entity_id
+        timestamp timestamp
+        jsonb details
+    }
+
+    USER ||--o{ INCIDENT : "reports"
+    USER ||--o{ INCIDENT : "assigned_to"
+    INCIDENT ||--o{ ATTACHMENT : "has"
+    USER ||--o{ QUIZ_RESULT : "takes"
+    TRAINING_MODULE ||--o{ QUIZ_RESULT : "generates"
+    USER ||--o{ AUDIT_LOG : "performs"
+            </div>
+            <div class="legend">
+                <h3>ERD Legend</h3>
+                <ul>
+                    <li><strong>PK</strong> = Primary Key</li>
+                    <li><strong>FK</strong> = Foreign Key</li>
+                    <li><strong>UK</strong> = Unique Key</li>
+                    <li><strong>||--o{</strong> = One-to-Many relationship</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- System Architecture Section -->
+        <div class="diagram-section">
+            <h2>2. System Architecture</h2>
+            <div class="mermaid">
+graph TB
+    subgraph "Client Layer"
+        U[("👤 End Users<br/>(Students/Staff)")]
+        A[("👨‍💼 Security Analysts<br/>(Admins)")]
+    end
+
+    subgraph "Presentation Layer"
+        SPA["🌐 React SPA<br/>(TypeScript)"]
+        EXT["🔌 Browser Extension"]
+        ADMIN["📊 Admin Dashboard"]
+    end
+
+    subgraph "API Gateway"
+        API["⚡ Node.js/Express<br/>REST API"]
+        AUTH["🔐 Auth Service<br/>(SAML/SSO/OAuth2)"]
+    end
+
+    subgraph "Business Logic Layer"
+        RS["📈 Risk Scoring<br/>Engine"]
+        IOC["🔍 IOC Extraction<br/>Service"]
+        ALERT["🚨 Alert<br/>Service"]
+    end
+
+    subgraph "Message Queue"
+        MQ[["📬 RabbitMQ/SQS<br/>Message Broker"]]
+    end
+
+    subgraph "Worker Services"
+        W1["⚙️ Attachment<br/>Scanner"]
+        W2["⚙️ Email<br/>Parser"]
+        W3["⚙️ Threat Intel<br/>Enricher"]
+    end
+
+    subgraph "Data Layer"
+        PG[("🐘 PostgreSQL<br/>Primary DB")]
+        S3[("📦 S3 Storage<br/>Attachments")]
+        CACHE[("⚡ Redis<br/>Cache")]
+        ELK[("📊 ELK Stack<br/>Analytics")]
+    end
+
+    subgraph "External Integrations"
+        SIEM["🛡️ SIEM/EDR"]
+        IDP["🏛️ Campus IdP<br/>(Active Directory)"]
+        EMAIL["📧 Email Gateway"]
+        TICKET["🎫 Ticketing<br/>(Jira)"]
+    end
+
+    subgraph "Monitoring"
+        PROM["📈 Prometheus"]
+        GRAF["📊 Grafana"]
+    end
+
+    U --> SPA
+    U --> EXT
+    A --> ADMIN
+    
+    SPA --> API
+    EXT --> API
+    ADMIN --> API
+    
+    API --> AUTH
+    AUTH --> IDP
+    
+    API --> RS
+    API --> PG
+    API --> CACHE
+    API --> MQ
+    
+    MQ --> W1
+    MQ --> W2
+    MQ --> W3
+    
+    W1 --> S3
+    W1 --> PG
+    W2 --> IOC
+    W3 --> SIEM
+    
+    IOC --> PG
+    ALERT --> EMAIL
+    ALERT --> TICKET
+    
+    API --> ELK
+    PG --> ELK
+    
+    API --> PROM
+    PROM --> GRAF
+            </div>
+            <div class="legend">
+                <h3>Architecture Components</h3>
+                <ul>
+                    <li><strong>React SPA</strong> - Single Page Application frontend</li>
+                    <li><strong>Node.js/Express</strong> - RESTful API backend</li>
+                    <li><strong>PostgreSQL</strong> - Primary relational database</li>
+                    <li><strong>S3 Storage</strong> - Object storage for attachments</li>
+                    <li><strong>Redis</strong> - Caching layer for performance</li>
+                    <li><strong>RabbitMQ/SQS</strong> - Async message processing</li>
+                    <li><strong>ELK Stack</strong> - Logging and analytics</li>
+                    <li><strong>Prometheus/Grafana</strong> - Monitoring</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            er: {
+                useMaxWidth: true,
+                layoutDirection: 'TB'
+            }
+        });
+    </script>
+</body>
+</html>
