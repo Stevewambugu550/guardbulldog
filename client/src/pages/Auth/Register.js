@@ -5,7 +5,7 @@ import { EyeIcon, EyeSlashIcon, ShieldCheckIcon, CheckIcon } from '@heroicons/re
 import toast from 'react-hot-toast';
 
 const API_URL = process.env.NODE_ENV === 'production' ? '' : (process.env.REACT_APP_API_URL || 'http://localhost:5000');
-const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '397897829701-ug6e6hl8rttqtk6rbnnv7v5lmb2l5fj7.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '973872584419-pa268ohsbga4blhlqdveoiorqipqfs49.apps.googleusercontent.com';
 
 const Register = () => {
   const [formData, setFormData] = useState({
