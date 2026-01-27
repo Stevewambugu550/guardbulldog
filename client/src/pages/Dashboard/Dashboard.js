@@ -5,9 +5,7 @@ import {
   DocumentTextIcon,
   ShieldCheckIcon,
   ExclamationTriangleIcon,
-  BellIcon,
   AcademicCapIcon,
-  MagnifyingGlassIcon,
   ClockIcon,
   CheckCircleIcon,
   ChatBubbleLeftIcon
@@ -18,10 +16,10 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const Dashboard = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
-  const [reports, setReports] = useState([]);
+  const [, setReports] = useState([]);
   const [threats, setThreats] = useState([]);
   const [stats, setStats] = useState({ reports: 0, pending: 0, resolved: 0 });
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {

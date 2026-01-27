@@ -17,10 +17,10 @@ const Messages = () => {
 
   const getToken = () => localStorage.getItem('token');
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchMessages();
     fetchAdmins();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
