@@ -30,8 +30,28 @@
   status = 200
 
 [[redirects]]
+  from = "/api/admin/users"
+  to = "/.netlify/functions/admin-users"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/users/*"
+  to = "/.netlify/functions/admin-users"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/reports"
+  to = "/.netlify/functions/admin-reports"
+  status = 200
+
+[[redirects]]
   from = "/api/admin/stats"
-  to = "/.netlify/functions/dashboard-stats"
+  to = "/.netlify/functions/admin-stats"
+  status = 200
+
+[[redirects]]
+  from = "/api/reports/*/status"
+  to = "/.netlify/functions/reports-status"
   status = 200
 
 [[redirects]]

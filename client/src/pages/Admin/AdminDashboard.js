@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { UsersIcon, DocumentTextIcon, ShieldCheckIcon, TrashIcon, PlusIcon, CheckCircleIcon, ExclamationTriangleIcon, ArrowPathIcon, ChatBubbleLeftRightIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NODE_ENV === 'production' ? '' : (process.env.REACT_APP_API_URL || 'http://localhost:5000');
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
@@ -24,15 +24,22 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [usersRes, reportsRes, messagesRes] = await Promise.all([
+      const [usersRes, reportsRes] = await Promise.all([
         fetch(`${API_URL}/api/admin/users`, { headers: headers() }),
-        fetch(`${API_URL}/api/admin/reports`, { headers: headers() }),
-        fetch(`${API_URL}/api/messages/admin/all`, { headers: headers() })
+        fetch(`${API_URL}/api/admin/reports`, { headers: headers() })
       ]);
-      if (usersRes.ok) setUsers((await usersRes.json()).users || []);
-      if (reportsRes.ok) setReports((await reportsRes.json()).reports || []);
-      if (messagesRes.ok) setMessages((await messagesRes.json()).messages || []);
-    } catch (err) { console.error(err); }
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        setUsers(usersData.users || []);
+      }
+      if (reportsRes.ok) {
+        const reportsData = await reportsRes.json();
+        setReports(reportsData.reports || []);
+      }
+    } catch (err) { 
+      console.error('Fetch error:', err); 
+      toast.error('Failed to load data');
+    }
     setLoading(false);
   };
 
@@ -80,9 +87,9 @@ const AdminDashboard = () => {
     } catch (err) { toast.error('Failed to send'); }
   };
 
-  const filteredReports = reports.filter(r => (filterStatus === 'all' || r.status === filterStatus) && (!searchTerm || r.emailSubject?.toLowerCase().includes(searchTerm.toLowerCase()) || r.senderEmail?.toLowerCase().includes(searchTerm.toLowerCase())));
+  const filteredReports = reports.filter(r => (filterStatus === 'all' || r.status === filterStatus) && (!searchTerm || r.subject?.toLowerCase().includes(searchTerm.toLowerCase()) || r.senderEmail?.toLowerCase().includes(searchTerm.toLowerCase()) || r.trackingNumber?.toLowerCase().includes(searchTerm.toLowerCase())));
   const filteredUsers = users.filter(u => !searchTerm || `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(searchTerm.toLowerCase()));
-  const stats = { users: users.length, reports: reports.length, pending: reports.filter(r => r.status === 'pending').length, resolved: reports.filter(r => r.status === 'resolved').length, messages: messages.length };
+  const stats = { users: users.length, reports: reports.length, pending: reports.filter(r => r.status === 'pending').length, resolved: reports.filter(r => r.status === 'resolved').length };
 
   if (loading) return <div className="flex items-center justify-center h-64"><ArrowPathIcon className="h-12 w-12 text-purple-600 animate-spin" /><span className="ml-3">Loading...</span></div>;
 
@@ -96,21 +103,20 @@ const AdminDashboard = () => {
 
       {/* Tabs */}
       <div className="bg-white rounded-xl shadow p-1 flex gap-1">
-        {['overview', 'users', 'reports', 'messages'].map(t => (
+        {['overview', 'users', 'reports'].map(t => (
           <button key={t} onClick={() => { setActiveTab(t); setSearchTerm(''); }} className={`flex-1 py-3 px-4 rounded-lg font-medium capitalize ${activeTab === t ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
-            {t === 'overview' ? '📊' : t === 'users' ? '👥' : t === 'reports' ? '📋' : '💬'} {t}
+            {t === 'overview' ? '📊' : t === 'users' ? '👥' : '📋'} {t}
           </button>
         ))}
       </div>
 
       {/* Overview */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white p-6 rounded-xl shadow border-l-4 border-blue-500"><UsersIcon className="h-8 w-8 text-blue-500" /><p className="text-3xl font-bold mt-2">{stats.users}</p><p className="text-gray-500 text-sm">Total Users</p></div>
           <div className="bg-white p-6 rounded-xl shadow border-l-4 border-orange-500"><DocumentTextIcon className="h-8 w-8 text-orange-500" /><p className="text-3xl font-bold mt-2">{stats.reports}</p><p className="text-gray-500 text-sm">Total Reports</p></div>
           <div className="bg-white p-6 rounded-xl shadow border-l-4 border-yellow-500"><ExclamationTriangleIcon className="h-8 w-8 text-yellow-500" /><p className="text-3xl font-bold mt-2">{stats.pending}</p><p className="text-gray-500 text-sm">Pending</p></div>
           <div className="bg-white p-6 rounded-xl shadow border-l-4 border-green-500"><CheckCircleIcon className="h-8 w-8 text-green-500" /><p className="text-3xl font-bold mt-2">{stats.resolved}</p><p className="text-gray-500 text-sm">Resolved</p></div>
-          <div className="bg-white p-6 rounded-xl shadow border-l-4 border-purple-500"><ChatBubbleLeftRightIcon className="h-8 w-8 text-purple-500" /><p className="text-3xl font-bold mt-2">{stats.messages}</p><p className="text-gray-500 text-sm">Messages</p></div>
         </div>
       )}
 
@@ -271,116 +277,6 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Messages - Two Way Chat */}
-      {activeTab === 'messages' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Users List */}
-          <div className="bg-white rounded-xl shadow overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-3">
-              <h3 className="text-white font-semibold">Users</h3>
-            </div>
-            <div className="divide-y max-h-[500px] overflow-y-auto">
-              {users.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">No users found</div>
-              ) : users.map((u, i) => (
-                <button 
-                  key={u.id || i} 
-                  onClick={() => setSelectedUser(u)}
-                  className={`w-full p-4 text-left hover:bg-purple-50 transition flex items-center ${selectedUser?.id === u.id ? 'bg-purple-100' : ''}`}
-                >
-                  <div className="h-10 w-10 rounded-full bg-purple-500 text-white flex items-center justify-center font-bold mr-3 flex-shrink-0">
-                    {u.firstName?.[0]}{u.lastName?.[0]}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{u.firstName} {u.lastName}</p>
-                    <p className="text-xs text-gray-500 truncate">{u.email}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          {/* Chat Area */}
-          <div className="lg:col-span-2 bg-white rounded-xl shadow overflow-hidden flex flex-col" style={{ minHeight: '500px' }}>
-            {!selectedUser ? (
-              <div className="flex-1 flex items-center justify-center text-gray-400">
-                <div className="text-center">
-                  <ChatBubbleLeftRightIcon className="h-16 w-16 mx-auto mb-4" />
-                  <p className="text-lg font-medium">Select a user to start chatting</p>
-                  <p className="text-sm">Click on any user from the list</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Chat Header */}
-                <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="h-10 w-10 rounded-full bg-white/20 text-white flex items-center justify-center font-bold mr-3">
-                      {selectedUser.firstName?.[0]}{selectedUser.lastName?.[0]}
-                    </div>
-                    <div>
-                      <p className="text-white font-semibold">{selectedUser.firstName} {selectedUser.lastName}</p>
-                      <p className="text-purple-200 text-sm">{selectedUser.email}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Messages */}
-                <div className="flex-1 p-4 overflow-y-auto bg-gray-50 space-y-3" style={{ maxHeight: '300px' }}>
-                  {messages.filter(m => m.sender_id === selectedUser.id || m.receiver_id === selectedUser.id).length === 0 ? (
-                    <div className="text-center text-gray-400 py-8">
-                      <p>No messages with this user yet</p>
-                      <p className="text-sm">Send a message below to start the conversation</p>
-                    </div>
-                  ) : (
-                    messages.filter(m => m.sender_id === selectedUser.id || m.receiver_id === selectedUser.id).map((m, i) => (
-                      <div key={m.id || i} className={`flex ${m.sender_id === selectedUser.id ? 'justify-start' : 'justify-end'}`}>
-                        <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${m.sender_id === selectedUser.id ? 'bg-white border shadow-sm' : 'bg-purple-600 text-white'}`}>
-                          {m.subject && <p className="font-semibold text-sm mb-1">{m.subject}</p>}
-                          <p className="text-sm">{m.content}</p>
-                          <p className={`text-xs mt-1 ${m.sender_id === selectedUser.id ? 'text-gray-400' : 'text-purple-200'}`}>
-                            {m.created_at ? new Date(m.created_at).toLocaleString() : ''}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-                
-                {/* Message Input */}
-                <div className="p-4 border-t bg-white">
-                  <form onSubmit={handleSendMessage} className="space-y-3">
-                    <input 
-                      type="text" 
-                      placeholder="Subject (optional)" 
-                      value={messageContent.subject} 
-                      onChange={e => setMessageContent({...messageContent, subject: e.target.value})} 
-                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none"
-                    />
-                    <div className="flex gap-3">
-                      <textarea 
-                        placeholder="Type your message here..." 
-                        rows={2}
-                        value={messageContent.content} 
-                        onChange={e => setMessageContent({...messageContent, content: e.target.value})} 
-                        className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none resize-none"
-                        required
-                      />
-                      <button 
-                        type="submit" 
-                        className="px-6 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition flex items-center self-end"
-                      >
-                        <PaperAirplaneIcon className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Add User Modal */}
       {showAddUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -398,19 +294,6 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Send Message Modal */}
-      {showMessage && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4 flex items-center"><PaperAirplaneIcon className="h-6 w-6 mr-2 text-blue-600" />Message {selectedUser.firstName}</h2>
-            <form onSubmit={handleSendMessage} className="space-y-3">
-              <input type="text" required placeholder="Subject" value={messageContent.subject} onChange={e => setMessageContent({...messageContent, subject: e.target.value})} className="w-full px-4 py-2 border rounded-lg" />
-              <textarea required placeholder="Your message..." rows={4} value={messageContent.content} onChange={e => setMessageContent({...messageContent, content: e.target.value})} className="w-full px-4 py-2 border rounded-lg resize-none" />
-              <div className="flex gap-3 pt-2"><button type="button" onClick={() => { setShowMessage(false); setSelectedUser(null); }} className="flex-1 py-2 border rounded-lg hover:bg-gray-50">Cancel</button><button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Send</button></div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
