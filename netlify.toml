@@ -20,6 +20,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/auth/google"
+  to = "/.netlify/functions/google-auth"
+  status = 200
+
+[[redirects]]
   from = "/api/health"
   to = "/.netlify/functions/health"
   status = 200
