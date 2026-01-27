@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Get API base URL from environment variable
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Get API base URL - Use empty string in production for Netlify functions
+const API_URL = process.env.NODE_ENV === 'production' ? '' : (process.env.REACT_APP_API_URL || 'http://localhost:5000');
 
 // Create axios instance with base configuration
 const api = axios.create({

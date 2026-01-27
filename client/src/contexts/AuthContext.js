@@ -16,8 +16,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   
-  // API Base URL
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  // API Base URL - Use Netlify functions in production, localhost in development
+  const API_URL = process.env.NODE_ENV === 'production' ? '' : (process.env.REACT_APP_API_URL || 'http://localhost:5000');
 
   // Configure axios defaults
   useEffect(() => {

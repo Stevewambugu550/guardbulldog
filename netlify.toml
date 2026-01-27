@@ -10,6 +10,31 @@
   NPM_VERSION = "9"
 
 [[redirects]]
+  from = "/api/auth/login"
+  to = "/.netlify/functions/login"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/register"
+  to = "/.netlify/functions/register"
+  status = 200
+
+[[redirects]]
+  from = "/api/health"
+  to = "/.netlify/functions/health"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/stats"
+  to = "/.netlify/functions/dashboard-stats"
+  status = 200
+
+[[redirects]]
+  from = "/api/reports"
+  to = "/.netlify/functions/get-reports"
+  status = 200
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
