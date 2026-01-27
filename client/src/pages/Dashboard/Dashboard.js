@@ -7,19 +7,16 @@ import {
   ExclamationTriangleIcon,
   AcademicCapIcon,
   ClockIcon,
-  CheckCircleIcon,
-  ChatBubbleLeftIcon
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NODE_ENV === 'production' ? '' : (process.env.REACT_APP_API_URL || 'http://localhost:5000');
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [messages, setMessages] = useState([]);
-  const [, setReports] = useState([]);
-  const [threats, setThreats] = useState([]);
+  const [reports, setReports] = useState([]);
   const [stats, setStats] = useState({ reports: 0, pending: 0, resolved: 0 });
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,20 +36,6 @@ const Dashboard = () => {
             resolved: reps.filter(r => r.status === 'resolved').length
           });
         }
-
-        // Fetch messages
-        const msgsRes = await fetch(`${API_URL}/api/messages`, { headers });
-        if (msgsRes.ok) {
-          const data = await msgsRes.json();
-          setMessages(data.messages || []);
-        }
-
-        // Fetch live threats
-        const threatsRes = await fetch(`${API_URL}/api/intelligence/threats`, { headers });
-        if (threatsRes.ok) {
-          const data = await threatsRes.json();
-          setThreats(data.threats || data || []);
-        }
       } catch (err) {
         console.log('Dashboard fetch:', err.message);
       }
@@ -66,25 +49,22 @@ const Dashboard = () => {
     { label: 'My Reports', value: stats.reports, icon: DocumentTextIcon, color: 'border-blue-500', iconColor: 'text-blue-500' },
     { label: 'Pending Review', value: stats.pending, icon: ClockIcon, color: 'border-yellow-500', iconColor: 'text-yellow-500' },
     { label: 'Resolved', value: stats.resolved, icon: CheckCircleIcon, color: 'border-green-500', iconColor: 'text-green-500' },
-    { label: 'Modules Completed', value: '3/10', icon: AcademicCapIcon, color: 'border-purple-500', iconColor: 'text-purple-500' },
   ];
 
   const quickActions = [
     { to: '/app/report-phishing', icon: ExclamationTriangleIcon, title: 'Report Phishing', desc: 'Submit suspicious email', bg: 'bg-red-50 hover:bg-red-100', iconColor: 'text-red-600' },
-    { to: '/app/education', icon: AcademicCapIcon, title: 'Education Center', desc: '10 modules with quizzes', bg: 'bg-blue-50 hover:bg-blue-100', iconColor: 'text-blue-600' },
+    { to: '/app/education', icon: AcademicCapIcon, title: 'Education Center', desc: 'Learn about threats', bg: 'bg-blue-50 hover:bg-blue-100', iconColor: 'text-blue-600' },
     { to: '/app/my-reports', icon: DocumentTextIcon, title: 'My Reports', desc: 'Track your submissions', bg: 'bg-green-50 hover:bg-green-100', iconColor: 'text-green-600' },
     { to: '/app/profile', icon: ShieldCheckIcon, title: 'My Profile', desc: 'Manage your account', bg: 'bg-purple-50 hover:bg-purple-100', iconColor: 'text-purple-600' },
   ];
 
-  // Use real threats or show placeholder if none
-  const recentThreats = threats.length > 0 ? threats.slice(0, 3).map(t => ({
-    type: t.type || t.threat_type || 'Unknown Threat',
-    target: t.target || 'General',
-    severity: t.severity || 'Medium',
-    time: t.createdAt ? new Date(t.createdAt).toLocaleDateString() : 'Recent'
-  })) : [
-    { type: 'No active threats', target: 'System is secure', severity: 'Low', time: 'Now' }
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -104,7 +84,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {quickStats.map((stat, i) => (
           <div key={i} className={`bg-white p-5 rounded-xl shadow-sm border-l-4 ${stat.color}`}>
             <div className="flex items-center justify-between">
@@ -118,73 +98,55 @@ const Dashboard = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Messages from Admin */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center">
-              <ChatBubbleLeftIcon className="h-5 w-5 mr-2 text-blue-600" />
-              Messages
-              {messages.filter(m => !m.is_read).length > 0 && (
-                <span className="ml-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                  {messages.filter(m => !m.is_read).length} new
-                </span>
-              )}
-            </h2>
-          </div>
-          <div className="space-y-3 max-h-80 overflow-y-auto">
-            {messages.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <ChatBubbleLeftIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                <p>No messages yet</p>
-                <p className="text-sm">Admin messages will appear here</p>
-              </div>
-            ) : (
-              messages.slice(0, 5).map(msg => (
-                <div key={msg.id} className={`p-4 rounded-lg ${msg.is_read ? 'bg-gray-50' : 'bg-blue-50 ring-2 ring-blue-200'}`}>
-                  <div className="flex items-start">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
-                      {msg.sender_first_name?.[0] || 'A'}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-gray-900 text-sm">{msg.subject || 'Message'}</h3>
-                        {!msg.is_read && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">New</span>}
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">{msg.content?.substring(0, 100)}</p>
-                      <p className="text-xs text-gray-400 mt-2">{msg.created_at ? new Date(msg.created_at).toLocaleDateString() : ''}</p>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Recent Threats */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-lg font-bold text-gray-900 flex items-center mb-4">
-            <ExclamationTriangleIcon className="h-5 w-5 mr-2 text-red-600" />
-            Recent Threats
+      {/* Recent Reports */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center">
+            <DocumentTextIcon className="h-5 w-5 mr-2 text-blue-600" />
+            My Recent Reports
           </h2>
-          <div className="space-y-4">
-            {recentThreats.map((threat, i) => (
-              <div key={i} className="p-3 bg-gray-50 rounded-lg">
+          <Link to="/app/my-reports" className="text-sm text-blue-600 hover:underline">
+            View All →
+          </Link>
+        </div>
+        {reports.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <DocumentTextIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+            <p>No reports submitted yet</p>
+            <p className="text-sm">Submit your first phishing report to help protect the community</p>
+            <Link to="/app/report-phishing" className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              Report Phishing
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {reports.slice(0, 5).map((report, i) => (
+              <div key={report.id || i} className="p-4 bg-gray-50 rounded-lg border border-gray-100">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900 text-sm">{threat.type}</span>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    threat.severity === 'High' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
-                  }`}>{threat.severity}</span>
+                  <div className="flex items-center space-x-3">
+                    <span className="bg-blue-100 text-blue-700 text-xs font-mono px-2 py-1 rounded">
+                      {report.trackingNumber || `RPT-${String(report.id).padStart(4, '0')}`}
+                    </span>
+                    <span className="font-medium text-gray-900 truncate max-w-xs">
+                      {report.subject || report.senderEmail || 'Phishing Report'}
+                    </span>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    report.status === 'resolved' ? 'bg-green-100 text-green-700' :
+                    report.status === 'investigating' ? 'bg-blue-100 text-blue-700' :
+                    report.status === 'confirmed' ? 'bg-red-100 text-red-700' :
+                    'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {report.status || 'pending'}
+                  </span>
                 </div>
-                <p className="text-sm text-gray-500 mt-1">Target: {threat.target}</p>
-                <p className="text-xs text-gray-400 mt-1">{threat.time}</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Reported: {report.createdAt ? new Date(report.createdAt).toLocaleDateString() : 'Recently'}
+                </p>
               </div>
             ))}
           </div>
-          <Link to="/app/intelligence" className="block mt-4 text-center text-sm text-blue-600 hover:underline">
-            View All Threats →
-          </Link>
-        </div>
+        )}
       </div>
 
       {/* Quick Actions */}
@@ -209,7 +171,7 @@ const Dashboard = () => {
           💡 Security Tip of the Day
         </h2>
         <p className="text-gray-700">
-          <strong>Always verify the sender's email address</strong> before clicking any links. Phishers often use addresses that look similar to legitimate ones but with slight variations (e.g., support@amaz0n.com instead of support@amazon.com).
+          <strong>Always verify the sender's email address</strong> before clicking any links. Phishers often use addresses that look similar to legitimate ones but with slight variations.
         </p>
         <Link to="/app/education" className="inline-block mt-4 text-blue-600 hover:underline font-medium">
           Learn more in our Education Center →
