@@ -6,8 +6,7 @@ import {
   ClockIcon,
   UserIcon,
   DocumentTextIcon,
-  ShieldCheckIcon,
-  CheckCircleIcon
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -42,27 +41,6 @@ const ReportDetails = () => {
 
     if (id) fetchReport();
   }, [id]);
-
-  const getStatusBadge = (status) => {
-    const badges = {
-      pending: 'badge-pending',
-      investigating: 'badge-investigating',
-      confirmed: 'badge-confirmed',
-      resolved: 'badge-resolved',
-      false_positive: 'badge-false-positive'
-    };
-    return badges[status] || 'badge-pending';
-  };
-
-  const getSeverityBadge = (severity) => {
-    const badges = {
-      low: 'badge-low',
-      medium: 'badge-medium',
-      high: 'badge-high',
-      critical: 'badge-critical'
-    };
-    return badges[severity] || 'badge-medium';
-  };
 
   if (isLoading) {
     return (

@@ -16,6 +16,7 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
 
 # Database
 *.db
@@ -50,7 +51,7 @@ jspm_packages/
 .yarn-integrity
 
 # dotenv environment variables file
-.env
+#.env
 
 # IDE files
 .vscode/
@@ -107,3 +108,76 @@ server/uploads/
 
 # Local Netlify folder
 .netlify
+
+# Development and testing files
+*.bat
+*.docx
+*.txt
+*.pdf
+*.zip
+*.html
+test-*.js
+test-*.html
+
+# Excess documentation (keep only essential production docs)
+API_FIX*.md
+API_TESTING.md
+CAFE_*.md
+CODE_*.md
+COMPLETE_*.md
+CREATE_*.md
+DEMO_*.md
+DEPLOY_NOW.md
+DEPLOY_QUICK.md
+DEPLOY_TO_*.md
+DEPLOY_V2*.md
+DEPLOY_INSTRUCTIONS.md
+DEVELOPMENT_*.md
+DOCUMENTATION_*.md
+FINAL_*.md
+GITHUB_DESKTOP*.md
+IMPLEMENTATION_*.md
+PROFESSIONAL_*.md
+PROJECT_STATUS.md
+PROJECT_SUMMARY.md
+PUSH_NOW.md
+PUSH_TO_*.md
+QUICK_*.md
+RECOMMENDED_*.md
+REDESIGN_*.md
+SETUP_*.md
+START_*.md
+TESTING_*.md
+TROUBLESHOOT.md
+UPLOAD_*.md
+USABILITY_*.md
+V2_*.md
+WORD_*.txt
+
+# Python scripts
+*.py
+
+# Assignment and personal files
+Chapter_*.txt
+Chapter_*.docx
+Contraceptive_*.docx
+Contraceptive_*.txt
+Karon_*.txt
+Karon_*.docx
+Yvonne_*.txt
+karon_*.txt
+karon_*.docx
+milka_*.html
+
+# Demo and test directories
+demo/
+cybersecurity_assignment/
+python_3/
+resources/
+assets/
+
+# Deployment temp folders
+netlify-deploy/
+
+# Backup files
+*.backup

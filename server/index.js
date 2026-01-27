@@ -2,40 +2,47 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const pool = require('./config/database');
-
-// Connect to Neon Database
-console.log('🚀 Starting GuardBulldog API with Neon Database...');
-pool.query('SELECT NOW()')
-  .then(() => console.log('✅ Neon Database connected!'))
-  .catch(err => console.log('⚠️ Database error:', err.message));
-
-const app = express();
 const fs = require('fs');
 const path = require('path');
+
+const app = express();
+
+// Database connection check
+pool.query('SELECT NOW()')
+  .then(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('✅ Database connected successfully');
+    }
+  })
+  .catch(err => {
+    console.error('❌ Database connection error:', err.message);
+    process.exit(1);
+  });
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
-  console.log('📁 Created uploads directory');
 }
 
-// Middleware - Allow ALL origins for now to fix CORS issues
+// CORS Configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:3000', 'https://guardbulldog.netlify.app'];
+
 app.use(cors({
-  origin: '*',
-  credentials: false
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
 
-// Add headers for CORS
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -104,18 +111,22 @@ app.use('/api/*', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🛡️  GuardBulldog API Server`);
+  console.log(`📡 Running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   
-  // Keep-alive ping to prevent Render free tier from sleeping
-  if (process.env.NODE_ENV === 'production') {
-    const SELF_URL = process.env.RENDER_EXTERNAL_URL || 'https://guardbulldog-3.onrender.com';
+  // Keep-alive ping for production hosting
+  if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
+    const SELF_URL = process.env.RENDER_EXTERNAL_URL;
     setInterval(() => {
       const https = require('https');
-      https.get(`${SELF_URL}/health`, (res) => {
-        console.log(`Keep-alive ping: ${res.statusCode}`);
+      https.get(`${SELF_URL}/api/health`, (res) => {
+        if (res.statusCode !== 200) {
+          console.error(`Keep-alive failed: ${res.statusCode}`);
+        }
       }).on('error', (err) => {
-        console.log('Keep-alive ping failed:', err.message);
+        console.error('Keep-alive error:', err.message);
       });
-    }, 14 * 60 * 1000); // Ping every 14 minutes
+    }, 14 * 60 * 1000);
   }
 });

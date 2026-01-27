@@ -9,18 +9,14 @@ import {
   ArrowRightOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
-  HomeIcon,
-  ExclamationTriangleIcon,
-  AcademicCapIcon,
-  ShieldCheckIcon,
-  CheckCircleIcon
+  HomeIcon
 } from '@heroicons/react/24/outline';
 
 const Navbar = ({ onMobileMenuToggle, isMobileMenuOpen }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [bellAnimation, setBellAnimation] = useState(false);
+  const [bellAnimation] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
