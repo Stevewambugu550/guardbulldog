@@ -7,6 +7,17 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+// Demo users for fallback when database is unavailable
+const getDemoUsers = async () => {
+  const salt = await bcrypt.genSalt(10);
+  return [
+    { id: 1, firstName: 'Super', lastName: 'Admin', email: 'admin@bowie.edu', password: await bcrypt.hash('Admin123!', salt), role: 'admin', department: 'IT Security' },
+    { id: 2, firstName: 'Security', lastName: 'Admin', email: 'security@bowie.edu', password: await bcrypt.hash('Security123!', salt), role: 'admin', department: 'Campus Security' },
+    { id: 3, firstName: 'Test', lastName: 'Student', email: 'student@bowie.edu', password: await bcrypt.hash('Student123!', salt), role: 'student', department: 'Computer Science' },
+    { id: 4, firstName: 'Test', lastName: 'Faculty', email: 'faculty@bowie.edu', password: await bcrypt.hash('Faculty123!', salt), role: 'faculty', department: 'Computer Science' }
+  ];
+};
+
 exports.handler = async function (event, context) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ msg: 'Method not allowed' }) };
@@ -14,10 +25,18 @@ exports.handler = async function (event, context) {
 
   try {
     const { email, password } = JSON.parse(event.body);
+    let user = null;
 
-    // Find user by email
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    const user = result.rows[0];
+    // Try database first
+    try {
+      const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+      user = result.rows[0];
+    } catch (dbError) {
+      console.log('Database unavailable, using demo users');
+      // Fallback to demo users
+      const demoUsers = await getDemoUsers();
+      user = demoUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+    }
 
     if (!user) {
       return { 

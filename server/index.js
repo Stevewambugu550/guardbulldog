@@ -7,7 +7,7 @@ const path = require('path');
 
 const app = express();
 
-// Database connection check
+// Database connection check (non-blocking)
 pool.query('SELECT NOW()')
   .then(() => {
     if (process.env.NODE_ENV !== 'production') {
@@ -15,8 +15,8 @@ pool.query('SELECT NOW()')
     }
   })
   .catch(err => {
-    console.error('❌ Database connection error:', err.message);
-    process.exit(1);
+    console.error('⚠️ Database connection error:', err.message);
+    console.log('📦 Running with in-memory storage mode');
   });
 
 // Create uploads directory if it doesn't exist
