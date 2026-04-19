@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_EFgeuMKSqk98@ep-polished-scene-ah90agqp-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require',
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
@@ -81,5 +81,7 @@ exports.handler = async function (event, context) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ msg: 'Server error during login.' }) 
     };
+  } finally {
+    pool.end();
   }
 };
