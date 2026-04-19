@@ -27,16 +27,8 @@ exports.handler = async function (event, context) {
     const { email, password } = JSON.parse(event.body);
     let user = null;
 
-    // Try database first
-    try {
-      const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-      user = result.rows[0];
-    } catch (dbError) {
-      console.log('Database unavailable, using demo users');
-      // Fallback to demo users
-      const demoUsers = await getDemoUsers();
-      user = demoUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-    }
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    user = result.rows[0];
 
     if (!user) {
       return { 
