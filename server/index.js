@@ -28,7 +28,7 @@ if (!fs.existsSync(uploadsDir)) {
 // CORS Configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:3000', 'https://guardbulldog.netlify.app'];
+  : ['http://localhost:3000', 'https://guardbulldog.netlify.app', 'https://guardbulldog-bsu-final.netlify.app'];
 
 app.use(cors({
   origin: function(origin, callback) {
