@@ -30,6 +30,7 @@ import SecurityLogs from './pages/Admin/SecurityLogs';
 import GuestReport from './pages/Guest/GuestReport';
 import TrackReport from './pages/Guest/TrackReport';
 import Messages from './pages/Messages/Messages';
+import AutomatedEmailAnalysis from './components/EmailAnalyzer/AutomatedEmailAnalysis';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -84,6 +85,7 @@ function App() {
               {/* Guest Reporting Routes (No Auth Required) */}
               <Route path="/guest-report" element={<GuestReport />} />
               <Route path="/track-report" element={<TrackReport />} />
+              <Route path="/email-analyzer" element={<AutomatedEmailAnalysis />} />
               
               {/* Public Auth Routes */}
               <Route path="/login" element={
@@ -106,6 +108,7 @@ function App() {
                 <Route index element={<Navigate to="/app/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="report-phishing" element={<ReportPhishing />} />
+                <Route path="email-analyzer" element={<AutomatedEmailAnalysis />} />
                 <Route path="my-reports" element={<MyReports />} />
                 <Route path="reports/:id" element={<ReportDetails />} />
                 <Route path="profile" element={<Profile />} />

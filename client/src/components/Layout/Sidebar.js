@@ -12,7 +12,8 @@ import {
   Cog6ToothIcon,
   ShieldCheckIcon,
   ChevronRightIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -31,11 +32,17 @@ const Sidebar = ({ isOpen, onClose }) => {
       description: 'Overview and quick actions'
     },
     { 
+      name: 'Email Analyzer', 
+      href: '/app/email-analyzer', 
+      icon: MagnifyingGlassIcon,
+      description: 'Instant automated email analysis',
+      highlight: true
+    },
+    { 
       name: 'Report Phishing', 
       href: '/app/report-phishing', 
       icon: ExclamationTriangleIcon,
-      description: 'Submit suspicious emails',
-      highlight: true
+      description: 'Submit suspicious emails'
     },
     { 
       name: 'My Reports', 

@@ -11,7 +11,8 @@ import {
   EnvelopeIcon,
   MapPinIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 
 const Home = () => {
@@ -67,6 +68,7 @@ const Home = () => {
               <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium">Home</Link>
               <Link to="/about" className="text-gray-700 hover:text-blue-600 font-medium">About</Link>
               <Link to="/contact" className="text-gray-700 hover:text-blue-600 font-medium">Contact</Link>
+              <Link to="/email-analyzer" className="text-blue-600 hover:text-blue-700 font-bold">🔍 Email Analyzer</Link>
               <Link to="/guest-report" className="text-red-600 hover:text-red-700 font-medium">🚨 Report</Link>
               <Link to="/login" className="text-gray-700 hover:text-blue-600 font-medium">Sign In</Link>
               <Link to="/register" className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition font-medium">
@@ -91,6 +93,7 @@ const Home = () => {
               <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">🏠 Home</Link>
               <Link to="/about" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">ℹ️ About</Link>
               <Link to="/contact" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">📞 Contact</Link>
+              <Link to="/email-analyzer" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg font-bold">🔍 Email Analyzer</Link>
               <Link to="/guest-report" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg font-bold">🚨 Report Phishing</Link>
               <Link to="/track-report" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">🔍 Track Report</Link>
               <hr className="my-2" />
@@ -120,11 +123,14 @@ const Home = () => {
               Advanced AI-Powered Phishing Detection & Security Awareness Platform for the Bowie State University Community
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/email-analyzer" className="px-8 py-4 bg-gradient-to-r from-blue-400 to-cyan-500 text-white rounded-xl font-bold text-lg hover:shadow-xl transition transform hover:-translate-y-1">
+                🔍 Analyze Email Now <ArrowRightIcon className="inline w-5 h-5 ml-2" />
+              </Link>
               <Link to="/register" className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 rounded-xl font-bold text-lg hover:shadow-xl transition transform hover:-translate-y-1">
                 Get Started Free <ArrowRightIcon className="inline w-5 h-5 ml-2" />
               </Link>
               <Link to="/guest-report" className="px-8 py-4 bg-white/10 backdrop-blur text-white rounded-xl font-bold text-lg border-2 border-white/30 hover:bg-white/20 transition">
-                🚨 Report Phishing Now
+                🚨 Report Phishing
               </Link>
             </div>
           </div>
