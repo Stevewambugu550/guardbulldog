@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { UsersIcon, DocumentTextIcon, ShieldCheckIcon, TrashIcon, PlusIcon, CheckCircleIcon, ExclamationTriangleIcon, ArrowPathIcon, ChatBubbleLeftRightIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import {
+  UsersIcon,
+  DocumentTextIcon,
+  ShieldCheckIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  ArrowPathIcon,
+  ChartBarIcon
+} from '@heroicons/react/24/outline';
 
 const API_URL = process.env.NODE_ENV === 'production' ? '' : (process.env.REACT_APP_API_URL || 'http://localhost:5000');
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [reports, setReports] = useState([]);
-  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [showAddUser, setShowAddUser] = useState(false);
-  const [showMessage, setShowMessage] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [newUser, setNewUser] = useState({ firstName: '', lastName: '', email: '', phone: '', role: 'user', password: '' });
-  const [messageContent, setMessageContent] = useState({ subject: '', content: '' });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
 
   const getToken = () => localStorage.getItem('token');
   const headers = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` });
@@ -36,8 +35,8 @@ const AdminDashboard = () => {
         const reportsData = await reportsRes.json();
         setReports(reportsData.reports || []);
       }
-    } catch (err) { 
-      console.error('Fetch error:', err); 
+    } catch (err) {
+      console.error('Fetch error:', err);
       toast.error('Failed to load data');
     }
     setLoading(false);
@@ -46,253 +45,118 @@ const AdminDashboard = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchData(); }, []);
 
-  const handleAddUser = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch(`${API_URL}/api/admin/users`, { method: 'POST', headers: headers(), body: JSON.stringify(newUser) });
-      if (res.ok) { toast.success('User added!'); setShowAddUser(false); setNewUser({ firstName: '', lastName: '', email: '', phone: '', role: 'user', password: '' }); fetchData(); }
-      else { const d = await res.json(); toast.error(d.message || 'Failed'); }
-    } catch (err) { toast.error('Error adding user'); }
+  const stats = {
+    users: users.length,
+    reports: reports.length,
+    pending: reports.filter(r => r.status === 'pending').length,
+    resolved: reports.filter(r => r.status === 'resolved').length
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Delete this user permanently?')) return;
-    try {
-      const res = await fetch(`${API_URL}/api/admin/users/${userId}`, { method: 'DELETE', headers: headers() });
-      if (res.ok) { toast.success('User deleted!'); setUsers(users.filter(u => u.id !== userId)); }
-      else toast.error('Failed to delete');
-    } catch (err) { toast.error('Error'); }
-  };
+  const recentReports = [...reports]
+    .sort((a, b) => new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0))
+    .slice(0, 5);
 
-  const handleUpdateRole = async (userId, role) => {
-    try {
-      await fetch(`${API_URL}/api/admin/users/${userId}/role`, { method: 'PUT', headers: headers(), body: JSON.stringify({ role }) });
-      toast.success('Role updated!'); setUsers(users.map(u => u.id === userId ? { ...u, role } : u));
-    } catch (err) { toast.error('Error'); }
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <ArrowPathIcon className="h-12 w-12 text-purple-600 animate-spin" />
+        <span className="ml-3 text-gray-600">Loading dashboard...</span>
+      </div>
+    );
+  }
 
-  const handleUpdateStatus = async (reportId, status) => {
-    try {
-      await fetch(`${API_URL}/api/reports/${reportId}/status`, { method: 'PUT', headers: headers(), body: JSON.stringify({ status }) });
-      toast.success('Status updated!'); setReports(reports.map(r => r.id === reportId ? { ...r, status } : r));
-    } catch (err) { toast.error('Error'); }
-  };
-
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!selectedUser) return;
-    try {
-      const res = await fetch(`${API_URL}/api/messages/admin/send`, { method: 'POST', headers: headers(), body: JSON.stringify({ user_id: selectedUser.id, ...messageContent }) });
-      if (res.ok) { toast.success('Message sent!'); setShowMessage(false); setMessageContent({ subject: '', content: '' }); fetchData(); }
-    } catch (err) { toast.error('Failed to send'); }
-  };
-
-  const filteredReports = reports.filter(r => (filterStatus === 'all' || r.status === filterStatus) && (!searchTerm || r.subject?.toLowerCase().includes(searchTerm.toLowerCase()) || r.senderEmail?.toLowerCase().includes(searchTerm.toLowerCase()) || r.trackingNumber?.toLowerCase().includes(searchTerm.toLowerCase())));
-  const filteredUsers = users.filter(u => !searchTerm || `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(searchTerm.toLowerCase()));
-  const stats = { users: users.length, reports: reports.length, pending: reports.filter(r => r.status === 'pending').length, resolved: reports.filter(r => r.status === 'resolved').length };
-
-  if (loading) return <div className="flex items-center justify-center h-64"><ArrowPathIcon className="h-12 w-12 text-purple-600 animate-spin" /><span className="ml-3">Loading...</span></div>;
+  const resolutionRate = stats.reports > 0 ? Math.round((stats.resolved / stats.reports) * 100) : 0;
 
   return (
-    <div className="space-y-6 p-4">
+    <div className="max-w-7xl mx-auto space-y-6 p-4">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-6 text-white flex justify-between items-center">
-        <div><h1 className="text-2xl font-bold flex items-center"><ShieldCheckIcon className="h-8 w-8 mr-3" />Admin Control Panel</h1><p className="text-purple-100">Manage users, reports & communications</p></div>
-        <button onClick={fetchData} className="p-3 bg-white/20 rounded-xl hover:bg-white/30"><ArrowPathIcon className="h-6 w-6" /></button>
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-lg">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center">
+            <ShieldCheckIcon className="h-8 w-8 mr-3" />
+            Admin Dashboard
+          </h1>
+          <p className="text-purple-100 mt-1">Platform overview and activity summary</p>
+        </div>
+        <button
+          onClick={fetchData}
+          className="flex items-center px-4 py-2 bg-white/20 rounded-xl hover:bg-white/30 transition"
+        >
+          <ArrowPathIcon className="h-5 w-5 mr-2" /> Refresh
+        </button>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-xl shadow p-1 flex gap-1">
-        {['overview', 'users', 'reports'].map(t => (
-          <button key={t} onClick={() => { setActiveTab(t); setSearchTerm(''); }} className={`flex-1 py-3 px-4 rounded-lg font-medium capitalize ${activeTab === t ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
-            {t === 'overview' ? '📊' : t === 'users' ? '👥' : '📋'} {t}
-          </button>
-        ))}
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500 hover:shadow-md transition">
+          <UsersIcon className="h-8 w-8 text-blue-500" />
+          <p className="text-3xl font-bold mt-3 text-gray-900">{stats.users}</p>
+          <p className="text-gray-500 text-sm mt-1">Total Users</p>
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500 hover:shadow-md transition">
+          <DocumentTextIcon className="h-8 w-8 text-orange-500" />
+          <p className="text-3xl font-bold mt-3 text-gray-900">{stats.reports}</p>
+          <p className="text-gray-500 text-sm mt-1">Total Reports</p>
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-yellow-500 hover:shadow-md transition">
+          <ExclamationTriangleIcon className="h-8 w-8 text-yellow-500" />
+          <p className="text-3xl font-bold mt-3 text-gray-900">{stats.pending}</p>
+          <p className="text-gray-500 text-sm mt-1">Pending Review</p>
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500 hover:shadow-md transition">
+          <CheckCircleIcon className="h-8 w-8 text-green-500" />
+          <p className="text-3xl font-bold mt-3 text-gray-900">{stats.resolved}</p>
+          <p className="text-gray-500 text-sm mt-1">Resolved</p>
+        </div>
       </div>
 
-      {/* Overview */}
-      {activeTab === 'overview' && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white p-6 rounded-xl shadow border-l-4 border-blue-500"><UsersIcon className="h-8 w-8 text-blue-500" /><p className="text-3xl font-bold mt-2">{stats.users}</p><p className="text-gray-500 text-sm">Total Users</p></div>
-          <div className="bg-white p-6 rounded-xl shadow border-l-4 border-orange-500"><DocumentTextIcon className="h-8 w-8 text-orange-500" /><p className="text-3xl font-bold mt-2">{stats.reports}</p><p className="text-gray-500 text-sm">Total Reports</p></div>
-          <div className="bg-white p-6 rounded-xl shadow border-l-4 border-yellow-500"><ExclamationTriangleIcon className="h-8 w-8 text-yellow-500" /><p className="text-3xl font-bold mt-2">{stats.pending}</p><p className="text-gray-500 text-sm">Pending</p></div>
-          <div className="bg-white p-6 rounded-xl shadow border-l-4 border-green-500"><CheckCircleIcon className="h-8 w-8 text-green-500" /><p className="text-3xl font-bold mt-2">{stats.resolved}</p><p className="text-gray-500 text-sm">Resolved</p></div>
+      {/* Insights row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="bg-white p-6 rounded-xl shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Resolution Rate</h3>
+            <ChartBarIcon className="h-5 w-5 text-gray-400" />
+          </div>
+          <p className="text-4xl font-bold text-gray-900">{resolutionRate}%</p>
+          <div className="w-full bg-gray-100 rounded-full h-2 mt-3">
+            <div className="bg-green-500 h-2 rounded-full transition-all" style={{ width: `${resolutionRate}%` }} />
+          </div>
+          <p className="text-xs text-gray-500 mt-2">{stats.resolved} of {stats.reports} reports resolved</p>
         </div>
-      )}
 
-      {/* Users */}
-      {activeTab === 'users' && (
-        <div className="space-y-4">
-          <div className="flex gap-4 flex-wrap">
-            <input type="text" placeholder="Search users..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="flex-1 min-w-[200px] px-4 py-2 border rounded-lg" />
-            <button onClick={() => setShowAddUser(true)} className="px-6 py-2 bg-purple-600 text-white rounded-lg flex items-center hover:bg-purple-700"><PlusIcon className="h-5 w-5 mr-2" />Add User</button>
-          </div>
-          <div className="bg-white rounded-xl shadow overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-gray-50"><tr><th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Name</th><th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Email</th><th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Phone</th><th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Role</th><th className="px-6 py-3 text-right text-xs font-semibold text-gray-600">Actions</th></tr></thead>
-              <tbody>{filteredUsers.length === 0 ? <tr><td colSpan="5" className="px-6 py-8 text-center text-gray-500">No users found</td></tr> : filteredUsers.map((u, i) => (
-                <tr key={u.id || i} className="border-t hover:bg-gray-50">
-                  <td className="px-6 py-4"><div className="flex items-center"><div className="h-10 w-10 rounded-full bg-purple-500 text-white flex items-center justify-center font-bold mr-3">{u.firstName?.[0]}{u.lastName?.[0]}</div><span className="font-medium">{u.firstName} {u.lastName}</span></div></td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{u.email}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{u.phone || '-'}</td>
-                  <td className="px-6 py-4"><select value={u.role || 'user'} onChange={e => handleUpdateRole(u.id, e.target.value)} className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}><option value="user">User</option><option value="admin">Admin</option><option value="super_admin">Super Admin</option></select></td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <button onClick={() => { setSelectedUser(u); setShowMessage(true); }} className="p-2 text-blue-600 hover:bg-blue-50 rounded" title="Send message"><ChatBubbleLeftRightIcon className="h-5 w-5" /></button>
-                    <button onClick={() => handleDeleteUser(u.id)} className="p-2 text-red-600 hover:bg-red-50 rounded" title="Delete user"><TrashIcon className="h-5 w-5" /></button>
-                  </td>
-                </tr>
-              ))}</tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Reports */}
-      {activeTab === 'reports' && (
-        <div className="space-y-4">
-          <div className="flex gap-4 flex-wrap">
-            <input type="text" placeholder="Search reports by subject, email, or tracking #..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="flex-1 min-w-[200px] px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200" />
-            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500"><option value="all">All Status</option><option value="pending">Pending</option><option value="investigating">Investigating</option><option value="confirmed">Confirmed</option><option value="resolved">Resolved</option></select>
-          </div>
-          
-          {filteredReports.length === 0 ? (
-            <div className="bg-white rounded-xl shadow p-12 text-center">
-              <DocumentTextIcon className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">No Reports Found</h3>
-              <p className="text-gray-500">Users will submit phishing reports here. All submitted reports will appear in this section.</p>
+        <div className="bg-white p-6 rounded-xl shadow-sm lg:col-span-2">
+          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Recent Reports</h3>
+          {recentReports.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <DocumentTextIcon className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+              <p className="text-sm">No reports submitted yet</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {filteredReports.map((r, i) => (
-                <div key={r.id || i} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
-                  {/* Report Header with Tracking Number */}
-                  <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-3 flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-mono font-bold">
-                        {r.trackingNumber || `RPT-${String(r.id).padStart(4, '0')}`}
-                      </span>
-                      <span className="text-white/80 text-sm">
-                        Reported by: {r.firstName || r.reporter_email?.split('@')[0] || 'User'} {r.lastName || ''}
-                      </span>
-                    </div>
-                    <span className="text-white/80 text-sm">
-                      {r.createdAt || r.created_at ? new Date(r.createdAt || r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
-                    </span>
+            <div className="space-y-2">
+              {recentReports.map((r, i) => (
+                <div key={r.id || i} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {r.subject || 'Suspicious Email Report'}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {r.senderEmail || r.sender_email || 'Unknown sender'}
+                    </p>
                   </div>
-                  
-                  {/* Report Content */}
-                  <div className="p-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      {/* Left: Report Details */}
-                      <div className="lg:col-span-2 space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {r.subject || r.emailSubject || r.email_subject || 'Suspicious Email Report'}
-                        </h3>
-                        
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center">
-                            <span className="text-gray-500 w-28">Sender Email:</span>
-                            <span className="text-gray-900 font-medium">{r.senderEmail || r.sender_email || 'Unknown'}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <span className="text-gray-500 w-28">Report Type:</span>
-                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${
-                              (r.reportType || r.report_type) === 'phishing' ? 'bg-red-100 text-red-700' :
-                              (r.reportType || r.report_type) === 'malware' ? 'bg-purple-100 text-purple-700' :
-                              (r.reportType || r.report_type) === 'spam' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
-                              {r.reportType || r.report_type || 'suspicious'}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        {/* Email Body Preview */}
-                        {(r.emailBody || r.email_body) && (
-                          <div className="bg-gray-50 rounded-lg p-4 border">
-                            <p className="text-sm text-gray-600 font-medium mb-2">Email Content:</p>
-                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{(r.emailBody || r.email_body).substring(0, 300)}{(r.emailBody || r.email_body).length > 300 ? '...' : ''}</p>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Right: Status & Threat Level */}
-                      <div className="space-y-4">
-                        {/* Threat Level */}
-                        <div className="bg-gray-50 rounded-xl p-4">
-                          <p className="text-sm font-medium text-gray-700 mb-3">Threat Level</p>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className={`text-lg font-bold ${
-                              (r.severity === 'critical' || r.severity === 'high') ? 'text-red-600' :
-                              r.severity === 'medium' ? 'text-yellow-600' : 'text-green-600'
-                            }`}>
-                              {(r.severity || 'medium').toUpperCase()}
-                            </span>
-                            <span className={`w-3 h-3 rounded-full ${
-                              (r.severity === 'critical' || r.severity === 'high') ? 'bg-red-500 animate-pulse' :
-                              r.severity === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                            }`}></span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-3">
-                            <div className={`h-3 rounded-full transition-all ${
-                              (r.severity === 'critical' || r.severity === 'high') ? 'bg-red-500' :
-                              r.severity === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                            }`} style={{ width: r.severity === 'critical' ? '100%' : r.severity === 'high' ? '75%' : r.severity === 'medium' ? '50%' : '25%' }}></div>
-                          </div>
-                        </div>
-                        
-                        {/* Status Control */}
-                        <div className="bg-gray-50 rounded-xl p-4">
-                          <p className="text-sm font-medium text-gray-700 mb-3">Update Status</p>
-                          <select 
-                            value={r.status || 'pending'} 
-                            onChange={e => handleUpdateStatus(r.id, e.target.value)} 
-                            className={`w-full px-4 py-3 rounded-lg text-sm font-bold cursor-pointer border-2 ${
-                              r.status === 'pending' ? 'bg-yellow-50 border-yellow-300 text-yellow-800' : 
-                              r.status === 'resolved' ? 'bg-green-50 border-green-300 text-green-800' : 
-                              r.status === 'confirmed' ? 'bg-red-50 border-red-300 text-red-800' : 
-                              'bg-blue-50 border-blue-300 text-blue-800'
-                            }`}
-                          >
-                            <option value="pending">⏳ Pending Review</option>
-                            <option value="investigating">🔍 Investigating</option>
-                            <option value="confirmed">⚠️ Confirmed Threat</option>
-                            <option value="resolved">✅ Resolved</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <span className={`ml-3 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                    r.status === 'resolved' ? 'bg-green-100 text-green-700' :
+                    r.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                    r.status === 'investigating' ? 'bg-blue-100 text-blue-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {r.status || 'pending'}
+                  </span>
                 </div>
               ))}
             </div>
           )}
-          
-          {/* Report Count */}
-          {filteredReports.length > 0 && (
-            <div className="text-center text-sm text-gray-500 py-2">
-              Showing {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''}
-            </div>
-          )}
         </div>
-      )}
-
-      {/* Add User Modal */}
-      {showAddUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4 flex items-center"><PlusIcon className="h-6 w-6 mr-2 text-purple-600" />Add New User</h2>
-            <form onSubmit={handleAddUser} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3"><input type="text" required placeholder="First Name" value={newUser.firstName} onChange={e => setNewUser({...newUser, firstName: e.target.value})} className="px-4 py-2 border rounded-lg" /><input type="text" required placeholder="Last Name" value={newUser.lastName} onChange={e => setNewUser({...newUser, lastName: e.target.value})} className="px-4 py-2 border rounded-lg" /></div>
-              <input type="email" required placeholder="Email" value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} className="w-full px-4 py-2 border rounded-lg" />
-              <input type="tel" placeholder="Phone (optional)" value={newUser.phone} onChange={e => setNewUser({...newUser, phone: e.target.value})} className="w-full px-4 py-2 border rounded-lg" />
-              <select value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})} className="w-full px-4 py-2 border rounded-lg"><option value="user">User</option><option value="admin">Admin</option></select>
-              <input type="password" required placeholder="Password" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} className="w-full px-4 py-2 border rounded-lg" />
-              <div className="flex gap-3 pt-2"><button type="button" onClick={() => setShowAddUser(false)} className="flex-1 py-2 border rounded-lg hover:bg-gray-50">Cancel</button><button type="submit" className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">Add User</button></div>
-            </form>
-          </div>
-        </div>
-      )}
+      </div>
 
     </div>
   );
