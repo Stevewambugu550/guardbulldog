@@ -60,6 +60,21 @@
   status = 200
 
 [[redirects]]
+  from = "/api/reports/submit"
+  to = "/.netlify/functions/reports-submit"
+  status = 200
+
+[[redirects]]
+  from = "/api/guest/submit"
+  to = "/.netlify/functions/guest-submit"
+  status = 200
+
+[[redirects]]
+  from = "/api/guest/track/*"
+  to = "/.netlify/functions/guest-track"
+  status = 200
+
+[[redirects]]
   from = "/api/reports"
   to = "/.netlify/functions/get-reports"
   status = 200
