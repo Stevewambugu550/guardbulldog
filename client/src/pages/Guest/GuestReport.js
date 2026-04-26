@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { AlertCircle, CheckCircle, Shield, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+const API_URL = process.env.NODE_ENV === 'production' ? '' : (process.env.REACT_APP_API_URL || 'http://localhost:5000');
+
 const GuestReport = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -29,7 +31,6 @@ const GuestReport = () => {
     setSuccess(false);
 
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const response = await fetch(`${API_URL}/api/guest/submit`, {
         method: 'POST',
         headers: {
@@ -42,7 +43,13 @@ const GuestReport = () => {
 
       if (response.ok) {
         setSuccess(true);
-        setTrackingToken(data.tracking_token);
+        setTrackingToken(
+          data.tracking_token ||
+          data.trackingNumber ||
+          data?.data?.tracking_token ||
+          data?.data?.trackingNumber ||
+          ''
+        );
         setFormData({
           email: '',
           subject: '',
@@ -50,7 +57,7 @@ const GuestReport = () => {
           suspicious_url: ''
         });
       } else {
-        setError(data.message || 'Failed to submit report');
+        setError(data.message || data.msg || 'Failed to submit report');
       }
     } catch (err) {
       setError('Network error. Please try again.');

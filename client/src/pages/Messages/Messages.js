@@ -3,7 +3,7 @@ import { ChatBubbleLeftRightIcon, PaperAirplaneIcon, UserCircleIcon } from '@her
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NODE_ENV === 'production' ? '' : (process.env.REACT_APP_API_URL || 'http://localhost:5000');
 
 const Messages = () => {
   const { user } = useAuth();

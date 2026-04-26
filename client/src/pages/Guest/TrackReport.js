@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Search, AlertCircle, Clock, CheckCircle, XCircle, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+const API_URL = process.env.NODE_ENV === 'production' ? '' : (process.env.REACT_APP_API_URL || 'http://localhost:5000');
+
 const TrackReport = () => {
   const navigate = useNavigate();
   const [trackingToken, setTrackingToken] = useState('');
@@ -16,7 +18,6 @@ const TrackReport = () => {
     setReportData(null);
 
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const response = await fetch(`${API_URL}/api/guest/track/${trackingToken}`, {
         method: 'GET',
         headers: {
@@ -27,9 +28,9 @@ const TrackReport = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setReportData(data.data);
+        setReportData(data.data || data.report || data);
       } else {
-        setError(data.message || 'Report not found. Please check your tracking number.');
+        setError(data.message || data.msg || 'Report not found. Please check your tracking number.');
       }
     } catch (err) {
       setError('Network error. Please try again.');

@@ -8,7 +8,7 @@ import {
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NODE_ENV === 'production' ? '' : (process.env.REACT_APP_API_URL || 'http://localhost:5000');
 
 const ReportPhishing = () => {
   const [formData, setFormData] = useState({
@@ -80,6 +80,8 @@ const ReportPhishing = () => {
       Object.keys(formData).forEach(key => {
         formDataToSend.append(key, formData[key]);
       });
+      formDataToSend.append('subject', formData.emailSubject);
+      formDataToSend.append('emailBody', formData.emailContent);
       
       files.forEach(file => {
         formDataToSend.append('attachments', file);
@@ -96,11 +98,11 @@ const ReportPhishing = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setReportId(data.reportId || 'RPT-' + Date.now());
+        setReportId(data.trackingNumber || data.reportId || 'RPT-' + Date.now());
         setSubmitted(true);
         toast.success('Report submitted successfully!');
       } else {
-        throw new Error(data.message || 'Failed to submit report');
+        throw new Error(data.message || data.msg || 'Failed to submit report');
       }
     } catch (error) {
       console.error('Submit error:', error);

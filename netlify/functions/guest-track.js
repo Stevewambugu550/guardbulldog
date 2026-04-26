@@ -25,7 +25,11 @@ exports.handler = async function (event, context) {
     return { statusCode: 200, headers, body: '' };
   }
   if (event.httpMethod !== 'GET') {
-    return { statusCode: 405, headers, body: JSON.stringify({ success: false, message: 'Method not allowed' }) };
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ success: false, message: 'Method not allowed', msg: 'Method not allowed' })
+    };
   }
 
   try {
@@ -37,7 +41,11 @@ exports.handler = async function (event, context) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ success: false, message: 'Invalid tracking token format' })
+        body: JSON.stringify({
+          success: false,
+          message: 'Invalid tracking token format',
+          msg: 'Invalid tracking token format'
+        })
       };
     }
 
@@ -51,7 +59,11 @@ exports.handler = async function (event, context) {
       return {
         statusCode: 404,
         headers,
-        body: JSON.stringify({ success: false, message: 'Report not found. Please check your tracking token.' })
+        body: JSON.stringify({
+          success: false,
+          message: 'Report not found. Please check your tracking token.',
+          msg: 'Report not found. Please check your tracking token.'
+        })
       };
     }
 
@@ -63,7 +75,11 @@ exports.handler = async function (event, context) {
       headers,
       body: JSON.stringify({
         success: true,
+        message: 'Report status retrieved successfully',
+        msg: 'Report status retrieved successfully',
+        trackingNumber: report.trackingNumber,
         data: {
+          trackingNumber: report.trackingNumber,
           tracking_token: report.trackingNumber,
           subject: report.subject,
           description: report.emailBody,
@@ -76,6 +92,14 @@ exports.handler = async function (event, context) {
     };
   } catch (err) {
     console.error('Guest Track Error:', err);
-    return { statusCode: 500, headers, body: JSON.stringify({ success: false, message: 'Error retrieving report status' }) };
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        success: false,
+        message: 'Error retrieving report status',
+        msg: 'Error retrieving report status'
+      })
+    };
   }
 };
