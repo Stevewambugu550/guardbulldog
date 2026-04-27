@@ -14,59 +14,56 @@ const headers = {
   'Content-Type': 'application/json'
 };
 
-const ensureUsersTable = async () => {
-  // Check if table exists and inspect actual column names
-  const { rows: colRows } = await pool.query(`
+// Detect actual column names in the users table
+const getColumns = async () => {
+  const { rows } = await pool.query(`
     SELECT column_name FROM information_schema.columns 
     WHERE table_name = 'users' AND table_schema = 'public'
   `);
-  const existingCols = colRows.map(r => r.column_name);
+  return rows.map(r => r.column_name);
+};
+
+// Find a column matching any of the given candidate names
+const findCol = (existingCols, ...candidates) => {
+  for (const c of candidates) {
+    if (existingCols.includes(c)) return c;
+  }
+  return null;
+};
+
+const ensureUsersTable = async () => {
+  const existingCols = await getColumns();
 
   if (existingCols.length === 0) {
-    // Table doesn't exist yet - create it
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
+      CREATE TABLE users (
         id SERIAL PRIMARY KEY,
-        "firstName" VARCHAR(100),
-        "lastName" VARCHAR(100),
+        firstname VARCHAR(100),
+        lastname VARCHAR(100),
         email VARCHAR(255) UNIQUE,
         phone VARCHAR(30),
         password TEXT,
         role VARCHAR(50) DEFAULT 'student',
         department VARCHAR(100),
-        "createdAt" TIMESTAMPTZ DEFAULT NOW()
+        createdat TIMESTAMPTZ DEFAULT NOW()
       );
     `);
-  } else {
-    // Table exists - ensure all needed columns exist
-    const safeAlter = async (sql) => {
-      try { await pool.query(sql); } catch (e) { /* column likely exists */ }
-    };
-
-    // If lowercase columns exist without camelCase, add the camelCase versions
-    if (existingCols.includes('firstname') && !existingCols.includes('firstName')) {
-      await safeAlter(`ALTER TABLE users RENAME COLUMN firstname TO "firstName"`);
-    } else if (!existingCols.includes('firstname') && !existingCols.includes('firstName')) {
-      await safeAlter(`ALTER TABLE users ADD COLUMN "firstName" VARCHAR(100)`);
-    }
-
-    if (existingCols.includes('lastname') && !existingCols.includes('lastName')) {
-      await safeAlter(`ALTER TABLE users RENAME COLUMN lastname TO "lastName"`);
-    } else if (!existingCols.includes('lastname') && !existingCols.includes('lastName')) {
-      await safeAlter(`ALTER TABLE users ADD COLUMN "lastName" VARCHAR(100)`);
-    }
-
-    if (existingCols.includes('createdat') && !existingCols.includes('createdAt')) {
-      await safeAlter(`ALTER TABLE users RENAME COLUMN createdat TO "createdAt"`);
-    }
-
-    await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT');
-    await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)');
-    await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)');
-    await safeAlter("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'student'");
-    await safeAlter('ALTER TABLE users ALTER COLUMN password DROP NOT NULL');
-    await safeAlter('ALTER TABLE users ALTER COLUMN email DROP NOT NULL');
+    return;
   }
+
+  // Ensure required columns exist
+  const safeAlter = async (sql) => {
+    try { await pool.query(sql); } catch (e) {}
+  };
+  if (!findCol(existingCols, 'firstname', 'firstName')) await safeAlter(`ALTER TABLE users ADD COLUMN firstname VARCHAR(100)`);
+  if (!findCol(existingCols, 'lastname', 'lastName')) await safeAlter(`ALTER TABLE users ADD COLUMN lastname VARCHAR(100)`);
+  if (!findCol(existingCols, 'email')) await safeAlter(`ALTER TABLE users ADD COLUMN email VARCHAR(255) UNIQUE`);
+  if (!findCol(existingCols, 'password')) await safeAlter(`ALTER TABLE users ADD COLUMN password TEXT`);
+  if (!findCol(existingCols, 'phone')) await safeAlter(`ALTER TABLE users ADD COLUMN phone VARCHAR(30)`);
+  if (!findCol(existingCols, 'role')) await safeAlter(`ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'student'`);
+  if (!findCol(existingCols, 'department')) await safeAlter(`ALTER TABLE users ADD COLUMN department VARCHAR(100)`);
+  await safeAlter('ALTER TABLE users ALTER COLUMN password DROP NOT NULL');
+  await safeAlter('ALTER TABLE users ALTER COLUMN email DROP NOT NULL');
 };
 
 exports.handler = async function (event, context) {
@@ -80,11 +77,11 @@ exports.handler = async function (event, context) {
 
   try {
     await ensureUsersTable();
+    const existingCols = await getColumns();
 
     const parsed = JSON.parse(event.body || '{}');
     const { firstName, lastName, email, password, phone, department } = parsed;
 
-    // Validate required fields
     if (!firstName || !lastName || !email || !password) {
       return {
         statusCode: 400,
@@ -103,7 +100,7 @@ exports.handler = async function (event, context) {
       };
     }
 
-    // Check if this is the first user (make them admin)
+    // Check if this is the first user
     const userCount = await pool.query('SELECT COUNT(*) FROM users');
     const isFirstUser = parseInt(userCount.rows[0].count) === 0;
     const role = isFirstUser ? 'super_admin' : 'student';
@@ -112,21 +109,28 @@ exports.handler = async function (event, context) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user
+    // Use actual column names from DB
+    const fnCol = findCol(existingCols, 'firstname', 'firstName') || 'firstname';
+    const lnCol = findCol(existingCols, 'lastname', 'lastName') || 'lastname';
+
     const result = await pool.query(
-      `INSERT INTO users ("firstName", "lastName", email, phone, password, role, department) 
+      `INSERT INTO users ("${fnCol}", "${lnCol}", email, phone, password, role, department) 
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [firstName, lastName, email, phone || null, hashedPassword, role, department || 'Not Specified']
     );
     const newUser = result.rows[0];
+
+    // Extract values using both possible key casings
+    const userFirstName = newUser.firstName || newUser.firstname || firstName;
+    const userLastName = newUser.lastName || newUser.lastname || lastName;
 
     const payload = {
       user: {
         id: newUser.id,
         email: newUser.email,
         role: newUser.role,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName
+        firstName: userFirstName,
+        lastName: userLastName
       },
     };
 
@@ -140,8 +144,8 @@ exports.handler = async function (event, context) {
         user: {
           id: newUser.id,
           email: newUser.email,
-          firstName: newUser.firstName,
-          lastName: newUser.lastName,
+          firstName: userFirstName,
+          lastName: userLastName,
           role: newUser.role,
           department: newUser.department
         }

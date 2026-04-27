@@ -14,47 +14,53 @@ const headers = {
   'Content-Type': 'application/json'
 };
 
-const ensureUsersTable = async () => {
-  const { rows: colRows } = await pool.query(`
+const getColumns = async () => {
+  const { rows } = await pool.query(`
     SELECT column_name FROM information_schema.columns 
     WHERE table_name = 'users' AND table_schema = 'public'
   `);
-  const existingCols = colRows.map(r => r.column_name);
+  return rows.map(r => r.column_name);
+};
+
+const findCol = (existingCols, ...candidates) => {
+  for (const c of candidates) {
+    if (existingCols.includes(c)) return c;
+  }
+  return null;
+};
+
+const ensureUsersTable = async () => {
+  const existingCols = await getColumns();
 
   if (existingCols.length === 0) {
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
+      CREATE TABLE users (
         id SERIAL PRIMARY KEY,
-        "firstName" VARCHAR(100),
-        "lastName" VARCHAR(100),
+        firstname VARCHAR(100),
+        lastname VARCHAR(100),
         email VARCHAR(255) UNIQUE,
         phone VARCHAR(30),
         password TEXT,
         role VARCHAR(50) DEFAULT 'student',
         department VARCHAR(100),
-        "createdAt" TIMESTAMPTZ DEFAULT NOW()
+        createdat TIMESTAMPTZ DEFAULT NOW()
       );
     `);
-  } else {
-    const safeAlter = async (sql) => {
-      try { await pool.query(sql); } catch (e) { /* column likely exists */ }
-    };
-    if (existingCols.includes('firstname') && !existingCols.includes('firstName')) {
-      await safeAlter(`ALTER TABLE users RENAME COLUMN firstname TO "firstName"`);
-    }
-    if (existingCols.includes('lastname') && !existingCols.includes('lastName')) {
-      await safeAlter(`ALTER TABLE users RENAME COLUMN lastname TO "lastName"`);
-    }
-    if (existingCols.includes('createdat') && !existingCols.includes('createdAt')) {
-      await safeAlter(`ALTER TABLE users RENAME COLUMN createdat TO "createdAt"`);
-    }
-    await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT');
-    await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)');
-    await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)');
-    await safeAlter("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'student'");
-    await safeAlter('ALTER TABLE users ALTER COLUMN password DROP NOT NULL');
-    await safeAlter('ALTER TABLE users ALTER COLUMN email DROP NOT NULL');
+    return;
   }
+
+  const safeAlter = async (sql) => {
+    try { await pool.query(sql); } catch (e) {}
+  };
+  if (!findCol(existingCols, 'firstname', 'firstName')) await safeAlter(`ALTER TABLE users ADD COLUMN firstname VARCHAR(100)`);
+  if (!findCol(existingCols, 'lastname', 'lastName')) await safeAlter(`ALTER TABLE users ADD COLUMN lastname VARCHAR(100)`);
+  if (!findCol(existingCols, 'email')) await safeAlter(`ALTER TABLE users ADD COLUMN email VARCHAR(255) UNIQUE`);
+  if (!findCol(existingCols, 'password')) await safeAlter(`ALTER TABLE users ADD COLUMN password TEXT`);
+  if (!findCol(existingCols, 'phone')) await safeAlter(`ALTER TABLE users ADD COLUMN phone VARCHAR(30)`);
+  if (!findCol(existingCols, 'role')) await safeAlter(`ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'student'`);
+  if (!findCol(existingCols, 'department')) await safeAlter(`ALTER TABLE users ADD COLUMN department VARCHAR(100)`);
+  await safeAlter('ALTER TABLE users ALTER COLUMN password DROP NOT NULL');
+  await safeAlter('ALTER TABLE users ALTER COLUMN email DROP NOT NULL');
 };
 
 exports.handler = async function (event, context) {
@@ -69,11 +75,18 @@ exports.handler = async function (event, context) {
   try {
     await ensureUsersTable();
 
-    const { email, password } = JSON.parse(event.body);
-    let user = null;
+    const { email, password } = JSON.parse(event.body || '{}');
+
+    if (!email || !password) {
+      return { 
+        statusCode: 400, 
+        headers,
+        body: JSON.stringify({ message: 'Email and password are required', msg: 'Email and password are required' }) 
+      };
+    }
 
     const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    user = result.rows[0];
+    const user = result.rows[0];
 
     if (!user) {
       return { 
@@ -92,13 +105,16 @@ exports.handler = async function (event, context) {
       };
     }
 
+    const userFirstName = user.firstName || user.firstname || '';
+    const userLastName = user.lastName || user.lastname || '';
+
     const payload = {
       user: {
         id: user.id,
         email: user.email,
         role: user.role,
-        firstName: user.firstName || user.firstname || '',
-        lastName: user.lastName || user.lastname || ''
+        firstName: userFirstName,
+        lastName: userLastName
       },
     };
 
@@ -112,8 +128,8 @@ exports.handler = async function (event, context) {
         user: {
           id: user.id,
           email: user.email,
-          firstName: user.firstName || user.firstname || '',
-          lastName: user.lastName || user.lastname || '',
+          firstName: userFirstName,
+          lastName: userLastName,
           role: user.role,
           department: user.department
         }
@@ -124,7 +140,7 @@ exports.handler = async function (event, context) {
     return { 
       statusCode: 500, 
       headers,
-      body: JSON.stringify({ message: 'Server error during login.', msg: 'Server error during login.' }) 
+      body: JSON.stringify({ message: 'Server error during login.', msg: 'Server error during login.', error: err.message }) 
     };
   }
 };
