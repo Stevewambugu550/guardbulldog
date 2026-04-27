@@ -7,46 +7,23 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json'
-};
-
-const ensureUsersTable = async () => {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      "firstName" VARCHAR(100),
-      "lastName" VARCHAR(100),
-      email VARCHAR(255) UNIQUE,
-      phone VARCHAR(30),
-      password TEXT,
-      role VARCHAR(50) DEFAULT 'student',
-      department VARCHAR(100),
-      "createdAt" TIMESTAMPTZ DEFAULT NOW()
-    );
-  `);
-
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT');
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)');
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)');
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'student'");
+// Demo users for fallback when database is unavailable
+const getDemoUsers = async () => {
+  const salt = await bcrypt.genSalt(10);
+  return [
+    { id: 1, firstName: 'Super', lastName: 'Admin', email: 'admin@bowie.edu', password: await bcrypt.hash('Admin123!', salt), role: 'admin', department: 'IT Security' },
+    { id: 2, firstName: 'Security', lastName: 'Admin', email: 'security@bowie.edu', password: await bcrypt.hash('Security123!', salt), role: 'admin', department: 'Campus Security' },
+    { id: 3, firstName: 'Test', lastName: 'Student', email: 'student@bowie.edu', password: await bcrypt.hash('Student123!', salt), role: 'student', department: 'Computer Science' },
+    { id: 4, firstName: 'Test', lastName: 'Faculty', email: 'faculty@bowie.edu', password: await bcrypt.hash('Faculty123!', salt), role: 'faculty', department: 'Computer Science' }
+  ];
 };
 
 exports.handler = async function (event, context) {
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
-  }
-
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers, body: JSON.stringify({ message: 'Method not allowed', msg: 'Method not allowed' }) };
+    return { statusCode: 405, body: JSON.stringify({ msg: 'Method not allowed' }) };
   }
 
   try {
-    await ensureUsersTable();
-
     const { email, password } = JSON.parse(event.body);
     let user = null;
 
@@ -56,8 +33,8 @@ exports.handler = async function (event, context) {
     if (!user) {
       return { 
         statusCode: 401, 
-        headers,
-        body: JSON.stringify({ message: 'Invalid credentials', msg: 'Invalid credentials' }) 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ msg: 'Invalid credentials' }) 
       };
     }
 
@@ -65,8 +42,8 @@ exports.handler = async function (event, context) {
     if (!isMatch) {
       return { 
         statusCode: 401, 
-        headers,
-        body: JSON.stringify({ message: 'Invalid credentials', msg: 'Invalid credentials' }) 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ msg: 'Invalid credentials' }) 
       };
     }
 
@@ -84,7 +61,7 @@ exports.handler = async function (event, context) {
 
     return {
       statusCode: 200,
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         token,
         user: {
@@ -101,8 +78,10 @@ exports.handler = async function (event, context) {
     console.error('Login Error:', err);
     return { 
       statusCode: 500, 
-      headers,
-      body: JSON.stringify({ message: 'Server error during login.', msg: 'Server error during login.' }) 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ msg: 'Server error during login.' }) 
     };
+  } finally {
+    pool.end();
   }
 };

@@ -7,46 +7,12 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json'
-};
-
-const ensureUsersTable = async () => {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      "firstName" VARCHAR(100),
-      "lastName" VARCHAR(100),
-      email VARCHAR(255) UNIQUE,
-      phone VARCHAR(30),
-      password TEXT,
-      role VARCHAR(50) DEFAULT 'student',
-      department VARCHAR(100),
-      "createdAt" TIMESTAMPTZ DEFAULT NOW()
-    );
-  `);
-
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT');
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)');
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)');
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'student'");
-};
-
 exports.handler = async function (event, context) {
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
-  }
-
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers, body: JSON.stringify({ message: 'Method not allowed', msg: 'Method not allowed' }) };
+    return { statusCode: 405, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ msg: 'Method not allowed' }) };
   }
 
   try {
-    await ensureUsersTable();
-
     const { firstName, lastName, email, password, phone, department } = JSON.parse(event.body);
 
     // Check if user exists
@@ -54,8 +20,8 @@ exports.handler = async function (event, context) {
     if (existingUser.rows.length > 0) {
       return { 
         statusCode: 400, 
-        headers,
-        body: JSON.stringify({ message: 'User already exists', msg: 'User already exists' }) 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ msg: 'User already exists' }) 
       };
     }
 
@@ -90,7 +56,7 @@ exports.handler = async function (event, context) {
 
     return {
       statusCode: 200,
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         token,
         user: {
@@ -107,8 +73,8 @@ exports.handler = async function (event, context) {
     console.error('Registration Error:', err);
     return { 
       statusCode: 500, 
-      headers,
-      body: JSON.stringify({ message: 'Server error during registration.', msg: 'Server error during registration.' }) 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ msg: 'Server error during registration.' }) 
     };
   }
 };

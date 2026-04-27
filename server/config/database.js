@@ -85,7 +85,17 @@ const initializeDatabase = async () => {
     try {
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
       await pool.query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS "trackingNumber" VARCHAR(50) UNIQUE`);
+      await pool.query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS subject VARCHAR(500)`);
+      await pool.query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS "senderName" VARCHAR(255)`);
+      await pool.query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS "emailHeaders" TEXT`);
+      await pool.query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS "ipAddress" VARCHAR(50)`);
       await pool.query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS severity VARCHAR(50) DEFAULT 'medium'`);
+
+      await pool.query(`
+        UPDATE reports
+        SET subject = "emailSubject"
+        WHERE subject IS NULL AND "emailSubject" IS NOT NULL
+      `);
       console.log('✅ Database columns updated');
     } catch (e) {
       console.log('Column migration:', e.message);

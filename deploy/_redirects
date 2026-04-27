@@ -1,0 +1,20 @@
+# API redirects to Netlify functions (must come BEFORE SPA catch-all)
+/api/auth/login         /.netlify/functions/login               200
+/api/auth/register      /.netlify/functions/register            200
+/api/auth/google        /.netlify/functions/google-auth         200
+/api/health             /.netlify/functions/health              200
+/api/admin/users/*      /.netlify/functions/admin-users         200
+/api/admin/users        /.netlify/functions/admin-users         200
+/api/admin/reports      /.netlify/functions/admin-reports       200
+/api/admin/stats        /.netlify/functions/admin-stats         200
+/api/reports/user       /.netlify/functions/user-reports        200
+/api/reports/submit     /.netlify/functions/reports-submit      200
+/api/reports/:id/status /.netlify/functions/reports-status      200
+/api/reports            /.netlify/functions/get-reports         200
+/api/guest/submit       /.netlify/functions/guest-submit        200
+/api/guest/track/*      /.netlify/functions/guest-track         200
+/api/dashboard/stats    /.netlify/functions/dashboard-stats     200
+/api/recent-activity    /.netlify/functions/recent-activity     200
+
+# SPA fallback (must be last)
+/*                      /index.html                             200

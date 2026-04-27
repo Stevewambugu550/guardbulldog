@@ -32,27 +32,6 @@ const generateTrackingNumber = () => {
   return `GB-${date}-${random}`;
 };
 
-const ensureReportsTable = async () => {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS reports (
-      id SERIAL PRIMARY KEY,
-      "trackingNumber" VARCHAR(64) UNIQUE NOT NULL,
-      "senderEmail" VARCHAR(255),
-      "senderName" VARCHAR(255),
-      subject TEXT,
-      "emailBody" TEXT,
-      "reportType" VARCHAR(64) DEFAULT 'phishing',
-      severity VARCHAR(32) DEFAULT 'medium',
-      status VARCHAR(32) DEFAULT 'pending',
-      "reportedBy" INTEGER NULL,
-      "reviewedBy" INTEGER NULL,
-      "reviewedAt" TIMESTAMPTZ NULL,
-      "createdAt" TIMESTAMPTZ DEFAULT NOW(),
-      "updatedAt" TIMESTAMPTZ DEFAULT NOW()
-    );
-  `);
-};
-
 // Parse multipart form-data (text fields only; skip files for demo)
 const parseMultipart = (body, contentType) => {
   const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/);
@@ -81,25 +60,15 @@ exports.handler = async function (event, context) {
     return { statusCode: 200, headers, body: '' };
   }
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ success: false, message: 'Method not allowed', msg: 'Method not allowed' })
-    };
+    return { statusCode: 405, headers, body: JSON.stringify({ msg: 'Method not allowed' }) };
   }
 
   const user = verifyToken(event);
   if (!user) {
-    return {
-      statusCode: 401,
-      headers,
-      body: JSON.stringify({ success: false, message: 'Unauthorized', msg: 'Unauthorized' })
-    };
+    return { statusCode: 401, headers, body: JSON.stringify({ msg: 'Unauthorized' }) };
   }
 
   try {
-    await ensureReportsTable();
-
     const contentType = event.headers['content-type'] || event.headers['Content-Type'] || '';
     let data = {};
     if (contentType.includes('multipart/form-data')) {
@@ -131,31 +100,14 @@ exports.handler = async function (event, context) {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        success: true,
-        message: 'Report submitted successfully',
         msg: 'Report submitted successfully',
         reportId: result.rows[0].id,
         trackingNumber: result.rows[0].trackingNumber,
-        tracking_token: result.rows[0].trackingNumber,
-        data: {
-          report_id: result.rows[0].id,
-          tracking_token: result.rows[0].trackingNumber,
-          report: result.rows[0]
-        },
         report: result.rows[0]
       })
     };
   } catch (err) {
     console.error('Report Submit Error:', err);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({
-        success: false,
-        message: 'Server error submitting report',
-        msg: 'Server error submitting report',
-        error: err.message
-      })
-    };
+    return { statusCode: 500, headers, body: JSON.stringify({ msg: 'Server error submitting report', error: err.message }) };
   }
 };

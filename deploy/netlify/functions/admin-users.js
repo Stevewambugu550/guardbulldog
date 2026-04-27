@@ -21,35 +21,13 @@ const verifyAdmin = (event) => {
     if (!authHeader) return null;
     const token = authHeader.replace('Bearer ', '');
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'guardbulldog-secret-key-2024');
-    const role = decoded?.user?.role ? String(decoded.user.role).toLowerCase() : '';
-    if (decoded.user && (role === 'admin' || role === 'super_admin')) {
+    if (decoded.user && (decoded.user.role === 'admin' || decoded.user.role === 'super_admin')) {
       return decoded.user;
     }
     return null;
   } catch (err) {
     return null;
   }
-};
-
-const ensureUsersTable = async () => {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      "firstName" VARCHAR(100),
-      "lastName" VARCHAR(100),
-      email VARCHAR(255) UNIQUE,
-      phone VARCHAR(30),
-      password TEXT,
-      role VARCHAR(50) DEFAULT 'student',
-      department VARCHAR(100),
-      "createdAt" TIMESTAMPTZ DEFAULT NOW()
-    );
-  `);
-
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT');
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)');
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)');
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'student'");
 };
 
 exports.handler = async function (event, context) {
@@ -63,8 +41,6 @@ exports.handler = async function (event, context) {
   }
 
   try {
-    await ensureUsersTable();
-
     // GET - List all users
     if (event.httpMethod === 'GET') {
       const result = await pool.query(

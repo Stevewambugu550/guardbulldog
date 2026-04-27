@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Link } from 'react-router-dom';
 import {
@@ -11,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import toast from 'react-hot-toast';
+import { adminAPI } from '../../utils/api';
 
 const AdminReports = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -29,12 +29,10 @@ const AdminReports = () => {
 
   const { data, isLoading, error } = useQuery(
     ['adminReports', currentPage, filters],
-    () => axios.get('/api/admin/reports', {
-      params: {
-        page: currentPage,
-        limit: 20,
-        ...filters
-      }
+    () => adminAPI.getAllReports({
+      page: currentPage,
+      limit: 20,
+      ...filters
     }).then(res => res.data),
     {
       keepPreviousData: true
@@ -42,14 +40,10 @@ const AdminReports = () => {
   );
 
   const bulkUpdateMutation = useMutation(
-    ({ reportIds, status, notes }) => axios.put('/api/admin/reports/bulk-update', {
-      reportIds,
-      status,
-      notes
-    }),
+    ({ reportIds, status, notes }) => adminAPI.bulkUpdateReports(reportIds, { status, notes }),
     {
       onSuccess: (response) => {
-        toast.success(response.data.message);
+        toast.success(response.data.message || response.data.msg || 'Reports updated successfully');
         setSelectedReports([]);
         setShowBulkActions(false);
         queryClient.invalidateQueries('adminReports');
@@ -77,7 +71,7 @@ const AdminReports = () => {
     if (selectedReports.length === data?.reports?.length) {
       setSelectedReports([]);
     } else {
-      setSelectedReports(data?.reports?.map(report => report._id) || []);
+      setSelectedReports(data?.reports?.map(report => report.id || report._id).filter(Boolean) || []);
     }
   };
 
@@ -301,23 +295,32 @@ const AdminReports = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {reports.map((report) => (
-                  <tr key={report._id} className="hover:bg-gray-50">
+                {reports.map((report) => {
+                  const reportId = report.id || report._id;
+                  const subject = report.emailSubject || report.subject || 'Suspicious Email Report';
+                  const senderEmail = report.senderEmail || report.sender_email || 'Unknown sender';
+                  const reporterName = report.reportedBy
+                    ? `${report.reportedBy.firstName || ''} ${report.reportedBy.lastName || ''}`.trim()
+                    : `${report.firstName || ''} ${report.lastName || ''}`.trim();
+                  const reporterEmail = report.reportedBy?.email || report.reporter_email || '-';
+
+                  return (
+                  <tr key={reportId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
                         type="checkbox"
-                        checked={selectedReports.includes(report._id)}
-                        onChange={() => handleSelectReport(report._id)}
+                        checked={selectedReports.includes(reportId)}
+                        onChange={() => handleSelectReport(reportId)}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
                     </td>
                     <td className="px-6 py-4">
                       <div className="max-w-xs">
                         <div className="text-sm font-medium text-gray-900 truncate">
-                          {report.emailSubject}
+                          {subject}
                         </div>
                         <div className="text-sm text-gray-500 truncate">
-                          From: {report.senderEmail}
+                          From: {senderEmail}
                         </div>
                         <div className="flex items-center space-x-2 mt-1">
                           <span className="text-xs text-gray-500 capitalize">
@@ -331,10 +334,10 @@ const AdminReports = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {report.reportedBy?.firstName} {report.reportedBy?.lastName}
+                        {reporterName || 'Guest Reporter'}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {report.reportedBy?.email}
+                        {reporterEmail}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -365,11 +368,11 @@ const AdminReports = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(report.createdAt).toLocaleDateString()}
+                      {new Date(report.createdAt || report.created_at || Date.now()).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link
-                        to={`/reports/${report._id}`}
+                        to={`/app/reports/${reportId}`}
                         className="text-blue-600 hover:text-blue-900 flex items-center"
                       >
                         <EyeIcon className="h-4 w-4 mr-1" />
@@ -377,7 +380,7 @@ const AdminReports = () => {
                       </Link>
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>

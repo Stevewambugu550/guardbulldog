@@ -20,42 +20,15 @@ const statusMessages = {
   false_positive: 'After investigation, this email appears to be legitimate.'
 };
 
-const ensureReportsTable = async () => {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS reports (
-      id SERIAL PRIMARY KEY,
-      "trackingNumber" VARCHAR(64) UNIQUE NOT NULL,
-      "senderEmail" VARCHAR(255),
-      "senderName" VARCHAR(255),
-      subject TEXT,
-      "emailBody" TEXT,
-      "reportType" VARCHAR(64) DEFAULT 'phishing',
-      severity VARCHAR(32) DEFAULT 'medium',
-      status VARCHAR(32) DEFAULT 'pending',
-      "reportedBy" INTEGER NULL,
-      "reviewedBy" INTEGER NULL,
-      "reviewedAt" TIMESTAMPTZ NULL,
-      "createdAt" TIMESTAMPTZ DEFAULT NOW(),
-      "updatedAt" TIMESTAMPTZ DEFAULT NOW()
-    );
-  `);
-};
-
 exports.handler = async function (event, context) {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
   }
   if (event.httpMethod !== 'GET') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ success: false, message: 'Method not allowed', msg: 'Method not allowed' })
-    };
+    return { statusCode: 405, headers, body: JSON.stringify({ success: false, message: 'Method not allowed' }) };
   }
 
   try {
-    await ensureReportsTable();
-
     // Extract token from path: /api/guest/track/GB-XXXX
     const pathParts = event.path.split('/');
     const token = pathParts[pathParts.length - 1];
@@ -64,11 +37,7 @@ exports.handler = async function (event, context) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({
-          success: false,
-          message: 'Invalid tracking token format',
-          msg: 'Invalid tracking token format'
-        })
+        body: JSON.stringify({ success: false, message: 'Invalid tracking token format' })
       };
     }
 
@@ -82,11 +51,7 @@ exports.handler = async function (event, context) {
       return {
         statusCode: 404,
         headers,
-        body: JSON.stringify({
-          success: false,
-          message: 'Report not found. Please check your tracking token.',
-          msg: 'Report not found. Please check your tracking token.'
-        })
+        body: JSON.stringify({ success: false, message: 'Report not found. Please check your tracking token.' })
       };
     }
 
@@ -98,11 +63,7 @@ exports.handler = async function (event, context) {
       headers,
       body: JSON.stringify({
         success: true,
-        message: 'Report status retrieved successfully',
-        msg: 'Report status retrieved successfully',
-        trackingNumber: report.trackingNumber,
         data: {
-          trackingNumber: report.trackingNumber,
           tracking_token: report.trackingNumber,
           subject: report.subject,
           description: report.emailBody,
@@ -115,14 +76,6 @@ exports.handler = async function (event, context) {
     };
   } catch (err) {
     console.error('Guest Track Error:', err);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({
-        success: false,
-        message: 'Error retrieving report status',
-        msg: 'Error retrieving report status'
-      })
-    };
+    return { statusCode: 500, headers, body: JSON.stringify({ success: false, message: 'Error retrieving report status' }) };
   }
 };

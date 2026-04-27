@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   UsersIcon,
@@ -7,7 +8,9 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ArrowPathIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  ClockIcon,
+  EyeIcon
 } from '@heroicons/react/24/outline';
 
 const API_URL = process.env.NODE_ENV === 'production' ? '' : (process.env.REACT_APP_API_URL || 'http://localhost:5000');
@@ -16,6 +19,7 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const getToken = () => localStorage.getItem('token');
   const headers = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` });
@@ -27,14 +31,22 @@ const AdminDashboard = () => {
         fetch(`${API_URL}/api/admin/users`, { headers: headers() }),
         fetch(`${API_URL}/api/admin/reports`, { headers: headers() })
       ]);
+
+      if (!usersRes.ok || !reportsRes.ok) {
+        const errUsers = usersRes.ok ? '' : `users(${usersRes.status})`;
+        const errReports = reportsRes.ok ? '' : `reports(${reportsRes.status})`;
+        throw new Error(`Failed to load admin data ${errUsers} ${errReports}`.trim());
+      }
+
       if (usersRes.ok) {
         const usersData = await usersRes.json();
-        setUsers(usersData.users || []);
+        setUsers(usersData.users || usersData || []);
       }
       if (reportsRes.ok) {
         const reportsData = await reportsRes.json();
-        setReports(reportsData.reports || []);
+        setReports(reportsData.reports || reportsData.data || reportsData || []);
       }
+      setLastUpdated(new Date());
     } catch (err) {
       console.error('Fetch error:', err);
       toast.error('Failed to load data');
@@ -45,110 +57,169 @@ const AdminDashboard = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchData(); }, []);
 
-  const stats = {
-    users: users.length,
-    reports: reports.length,
-    pending: reports.filter(r => r.status === 'pending').length,
-    resolved: reports.filter(r => r.status === 'resolved').length
-  };
+  const stats = useMemo(() => {
+    const pending = reports.filter((r) => (r.status || '').toLowerCase() === 'pending').length;
+    const investigating = reports.filter((r) => (r.status || '').toLowerCase() === 'investigating').length;
+    const resolved = reports.filter((r) => (r.status || '').toLowerCase() === 'resolved').length;
 
-  const recentReports = [...reports]
-    .sort((a, b) => new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0))
-    .slice(0, 5);
+    return {
+      users: users.length,
+      reports: reports.length,
+      pending,
+      investigating,
+      resolved
+    };
+  }, [users, reports]);
+
+  const recentReports = useMemo(() => {
+    return [...reports]
+      .sort((a, b) => new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0))
+      .slice(0, 8);
+  }, [reports]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <ArrowPathIcon className="h-12 w-12 text-purple-600 animate-spin" />
-        <span className="ml-3 text-gray-600">Loading dashboard...</span>
+      <div className="flex items-center justify-center h-64 bg-slate-900/5 rounded-2xl">
+        <ArrowPathIcon className="h-10 w-10 text-slate-700 animate-spin" />
+        <span className="ml-3 text-slate-700 font-medium">Loading admin workspace...</span>
       </div>
     );
   }
 
   const resolutionRate = stats.reports > 0 ? Math.round((stats.resolved / stats.reports) * 100) : 0;
+  const pendingRate = stats.reports > 0 ? Math.round((stats.pending / stats.reports) * 100) : 0;
+  const investigatingRate = stats.reports > 0 ? Math.round((stats.investigating / stats.reports) * 100) : 0;
+
+  const statusClass = (status) => {
+    const state = (status || '').toLowerCase();
+    if (state === 'resolved') return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+    if (state === 'investigating') return 'bg-blue-100 text-blue-800 border-blue-200';
+    if (state === 'pending') return 'bg-amber-100 text-amber-800 border-amber-200';
+    return 'bg-slate-100 text-slate-700 border-slate-200';
+  };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 p-4">
+    <div className="max-w-7xl mx-auto space-y-6 p-4 md:p-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-lg">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center">
-            <ShieldCheckIcon className="h-8 w-8 mr-3" />
-            Admin Dashboard
-          </h1>
-          <p className="text-purple-100 mt-1">Platform overview and activity summary</p>
+      <div className="rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-blue-900 p-6 md:p-8 text-white shadow-2xl border border-slate-800">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-semibold tracking-wide uppercase">
+              <ShieldCheckIcon className="h-4 w-4" /> Security Operations Center
+            </div>
+            <h1 className="mt-4 text-3xl md:text-4xl font-extrabold tracking-tight">Admin Command Dashboard</h1>
+            <p className="mt-2 text-slate-200 max-w-2xl">
+              Centralized oversight for user activity, incident reports, and response execution.
+            </p>
+            <p className="mt-2 text-xs text-slate-300">
+              Last synced: {lastUpdated ? lastUpdated.toLocaleString() : 'Not available'}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              to="/app/admin/reports"
+              className="px-4 py-2.5 rounded-xl bg-white text-slate-900 font-semibold hover:shadow-lg transition"
+            >
+              Open Report Queue
+            </Link>
+            <button
+              onClick={fetchData}
+              className="flex items-center px-4 py-2.5 bg-white/15 border border-white/20 rounded-xl hover:bg-white/25 transition font-semibold"
+            >
+              <ArrowPathIcon className="h-5 w-5 mr-2" /> Refresh
+            </button>
+          </div>
         </div>
-        <button
-          onClick={fetchData}
-          className="flex items-center px-4 py-2 bg-white/20 rounded-xl hover:bg-white/30 transition"
-        >
-          <ArrowPathIcon className="h-5 w-5 mr-2" /> Refresh
-        </button>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500 hover:shadow-md transition">
-          <UsersIcon className="h-8 w-8 text-blue-500" />
-          <p className="text-3xl font-bold mt-3 text-gray-900">{stats.users}</p>
-          <p className="text-gray-500 text-sm mt-1">Total Users</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+          <UsersIcon className="h-7 w-7 text-indigo-600" />
+          <p className="text-3xl font-extrabold mt-3 text-slate-900">{stats.users}</p>
+          <p className="text-slate-500 text-sm mt-1">Registered users</p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500 hover:shadow-md transition">
-          <DocumentTextIcon className="h-8 w-8 text-orange-500" />
-          <p className="text-3xl font-bold mt-3 text-gray-900">{stats.reports}</p>
-          <p className="text-gray-500 text-sm mt-1">Total Reports</p>
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+          <DocumentTextIcon className="h-7 w-7 text-orange-600" />
+          <p className="text-3xl font-extrabold mt-3 text-slate-900">{stats.reports}</p>
+          <p className="text-slate-500 text-sm mt-1">Total reports</p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-yellow-500 hover:shadow-md transition">
-          <ExclamationTriangleIcon className="h-8 w-8 text-yellow-500" />
-          <p className="text-3xl font-bold mt-3 text-gray-900">{stats.pending}</p>
-          <p className="text-gray-500 text-sm mt-1">Pending Review</p>
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+          <ClockIcon className="h-7 w-7 text-amber-600" />
+          <p className="text-3xl font-extrabold mt-3 text-slate-900">{stats.pending}</p>
+          <p className="text-slate-500 text-sm mt-1">Pending review</p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500 hover:shadow-md transition">
-          <CheckCircleIcon className="h-8 w-8 text-green-500" />
-          <p className="text-3xl font-bold mt-3 text-gray-900">{stats.resolved}</p>
-          <p className="text-gray-500 text-sm mt-1">Resolved</p>
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+          <CheckCircleIcon className="h-7 w-7 text-emerald-600" />
+          <p className="text-3xl font-extrabold mt-3 text-slate-900">{stats.resolved}</p>
+          <p className="text-slate-500 text-sm mt-1">Resolved incidents</p>
         </div>
       </div>
 
       {/* Insights row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-xl shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Resolution Rate</h3>
-            <ChartBarIcon className="h-5 w-5 text-gray-400" />
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Response Overview</h3>
+            <ChartBarIcon className="h-5 w-5 text-slate-400" />
           </div>
-          <p className="text-4xl font-bold text-gray-900">{resolutionRate}%</p>
-          <div className="w-full bg-gray-100 rounded-full h-2 mt-3">
-            <div className="bg-green-500 h-2 rounded-full transition-all" style={{ width: `${resolutionRate}%` }} />
+          <p className="text-4xl font-extrabold text-slate-900">{resolutionRate}%</p>
+          <p className="text-xs text-slate-500 mt-1">Resolution rate</p>
+          <div className="space-y-3 mt-5">
+            <div>
+              <div className="flex justify-between text-xs text-slate-500 mb-1">
+                <span>Pending</span><span>{pendingRate}%</span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2">
+                <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${pendingRate}%` }} />
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-xs text-slate-500 mb-1">
+                <span>Investigating</span><span>{investigatingRate}%</span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2">
+                <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${investigatingRate}%` }} />
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-xs text-slate-500 mb-1">
+                <span>Resolved</span><span>{resolutionRate}%</span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2">
+                <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${resolutionRate}%` }} />
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-gray-500 mt-2">{stats.resolved} of {stats.reports} reports resolved</p>
+          <p className="text-xs text-slate-500 mt-3">{stats.resolved} of {stats.reports} reports resolved</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm lg:col-span-2">
-          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Recent Reports</h3>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Recent Reports</h3>
+            <Link to="/app/admin/reports" className="text-sm font-semibold text-blue-700 hover:text-blue-900 inline-flex items-center">
+              View all <EyeIcon className="h-4 w-4 ml-1" />
+            </Link>
+          </div>
           {recentReports.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <DocumentTextIcon className="h-12 w-12 mx-auto text-gray-300 mb-2" />
-              <p className="text-sm">No reports submitted yet</p>
+            <div className="text-center py-10 text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+              <ExclamationTriangleIcon className="h-10 w-10 mx-auto text-slate-300 mb-2" />
+              <p className="text-sm font-medium">No reports submitted yet</p>
+              <p className="text-xs mt-1">As users submit reports, they will appear here automatically.</p>
             </div>
           ) : (
             <div className="space-y-2">
               {recentReports.map((r, i) => (
-                <div key={r.id || i} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition">
+                <div key={r.id || i} className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-sm font-semibold text-slate-900 truncate">
                       {r.subject || 'Suspicious Email Report'}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">
-                      {r.senderEmail || r.sender_email || 'Unknown sender'}
+                    <p className="text-xs text-slate-500 truncate">
+                      {(r.senderEmail || r.sender_email || 'Unknown sender')} • {new Date(r.createdAt || r.created_at || Date.now()).toLocaleString()}
                     </p>
                   </div>
-                  <span className={`ml-3 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                    r.status === 'resolved' ? 'bg-green-100 text-green-700' :
-                    r.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                    r.status === 'investigating' ? 'bg-blue-100 text-blue-700' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
+                  <span className={`ml-3 px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${statusClass(r.status)}`}>
                     {r.status || 'pending'}
                   </span>
                 </div>
@@ -156,6 +227,11 @@ const AdminDashboard = () => {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="bg-slate-900 text-slate-100 rounded-2xl p-4 text-sm flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <p>Report visibility is now connected directly to live admin APIs.</p>
+        <p className="text-slate-300">If a report is submitted successfully, it will appear in this dashboard after refresh.</p>
       </div>
 
     </div>

@@ -11,8 +11,7 @@ import {
   EnvelopeIcon,
   MapPinIcon,
   Bars3Icon,
-  XMarkIcon,
-  MagnifyingGlassIcon
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 const Home = () => {
@@ -38,41 +37,41 @@ const Home = () => {
   }, []);
 
   const features = [
-    { icon: ExclamationTriangleIcon, title: 'Report Phishing', desc: 'Quickly report suspicious emails and protect our community', color: 'from-red-500 to-orange-500' },
-    { icon: AcademicCapIcon, title: 'Security Training', desc: '10 comprehensive modules with quizzes and certificates', color: 'from-blue-500 to-indigo-500' },
-    { icon: ChartBarIcon, title: 'Threat Analytics', desc: 'Real-time statistics and threat intelligence dashboard', color: 'from-green-500 to-teal-500' },
-    { icon: ShieldCheckIcon, title: 'AI Protection', desc: 'Advanced machine learning to detect sophisticated attacks', color: 'from-purple-500 to-pink-500' },
+    { icon: ExclamationTriangleIcon, title: 'Rapid Incident Reporting', desc: 'Submit suspicious emails in under a minute with guided reporting fields.', color: 'from-rose-500 to-red-600' },
+    { icon: AcademicCapIcon, title: 'Awareness Training Center', desc: 'Scenario-based modules, quizzes, and progress tracking for campus users.', color: 'from-blue-600 to-indigo-600' },
+    { icon: ChartBarIcon, title: 'Operational Threat Insights', desc: 'Live dashboards help administrators prioritize and respond faster.', color: 'from-emerald-500 to-teal-600' },
+    { icon: ShieldCheckIcon, title: 'AI-Assisted Detection', desc: 'Automated triage highlights likely phishing patterns before impact spreads.', color: 'from-violet-600 to-fuchsia-600' },
   ];
 
   const testimonials = [
-    { name: 'Dr. Sarah Johnson', role: 'Professor, Computer Science', text: 'GUARDBULLDOG has transformed how our department handles security threats. The training modules are excellent.' },
-    { name: 'Marcus Williams', role: 'IT Security Analyst', text: 'The reporting system is intuitive and the analytics help us respond to threats in real-time.' },
-    { name: 'Angela Davis', role: 'Student, Senior Year', text: 'I learned so much about phishing through the education center. Now I can spot scams instantly!' },
+    { name: 'Dr. Sarah Johnson', role: 'Professor, Computer Science', text: 'GUARDBULLDOG gave our department a consistent playbook for identifying and escalating suspicious messages.' },
+    { name: 'Marcus Williams', role: 'IT Security Analyst', text: 'The response pipeline is clear, and reporting quality improved significantly after rollout.' },
+    { name: 'Angela Davis', role: 'Senior Student Leader', text: 'The training is practical, clear, and immediately useful in day-to-day campus communication.' },
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-slate-50">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-slate-900 to-blue-700 rounded-xl flex items-center justify-center shadow-md">
                 <ShieldCheckIcon className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-bold">GUARD<span className="text-blue-600">BULLDOG</span></span>
+              <span className="text-xl font-extrabold tracking-tight text-slate-900">GUARD<span className="text-blue-700">BULLDOG</span></span>
             </Link>
             
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium">Home</Link>
-              <Link to="/about" className="text-gray-700 hover:text-blue-600 font-medium">About</Link>
-              <Link to="/contact" className="text-gray-700 hover:text-blue-600 font-medium">Contact</Link>
-              <Link to="/email-analyzer" className="text-blue-600 hover:text-blue-700 font-bold">🔍 Email Analyzer</Link>
-              <Link to="/guest-report" className="text-red-600 hover:text-red-700 font-medium">🚨 Report</Link>
-              <Link to="/login" className="text-gray-700 hover:text-blue-600 font-medium">Sign In</Link>
-              <Link to="/register" className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition font-medium">
-                Get Started
+              <Link to="/" className="text-slate-700 hover:text-blue-700 font-semibold">Home</Link>
+              <Link to="/about" className="text-slate-700 hover:text-blue-700 font-semibold">About</Link>
+              <Link to="/contact" className="text-slate-700 hover:text-blue-700 font-semibold">Contact</Link>
+              <Link to="/email-analyzer" className="text-blue-700 hover:text-blue-800 font-semibold">Email Analyzer</Link>
+              <Link to="/guest-report" className="text-red-600 hover:text-red-700 font-semibold">Report</Link>
+              <Link to="/login" className="text-slate-700 hover:text-blue-700 font-semibold">Sign In</Link>
+              <Link to="/register" className="px-5 py-2.5 bg-gradient-to-r from-blue-700 to-indigo-700 text-white rounded-lg hover:shadow-lg transition font-semibold">
+                Create Account
               </Link>
             </div>
 
@@ -90,48 +89,53 @@ const Home = () => {
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-gray-100 shadow-lg">
             <div className="px-4 py-4 space-y-3">
-              <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">🏠 Home</Link>
-              <Link to="/about" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">ℹ️ About</Link>
-              <Link to="/contact" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">📞 Contact</Link>
-              <Link to="/email-analyzer" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg font-bold">🔍 Email Analyzer</Link>
-              <Link to="/guest-report" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg font-bold">🚨 Report Phishing</Link>
-              <Link to="/track-report" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">🔍 Track Report</Link>
+              <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">Home</Link>
+              <Link to="/about" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">About</Link>
+              <Link to="/contact" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">Contact</Link>
+              <Link to="/email-analyzer" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg font-semibold">Email Analyzer</Link>
+              <Link to="/guest-report" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg font-semibold">Report Phishing</Link>
+              <Link to="/track-report" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">Track Report</Link>
               <hr className="my-2" />
-              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">🔐 Sign In</Link>
-              <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-bold text-center">Get Started Free</Link>
+              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">Sign In</Link>
+              <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 bg-gradient-to-r from-blue-700 to-indigo-700 text-white rounded-lg font-semibold text-center">Create Account</Link>
             </div>
           </div>
         )}
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-24 pb-16 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
+      <section className="pt-24 pb-16 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-900 relative overflow-hidden">
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-20 left-20 w-72 h-72 bg-blue-400 rounded-full filter blur-3xl animate-pulse"></div>
           <div className="absolute bottom-20 right-20 w-96 h-96 bg-indigo-500 rounded-full filter blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center py-16">
-            <div className="inline-flex items-center px-4 py-2 bg-blue-500/20 rounded-full text-blue-200 text-sm mb-6">
+            <div className="inline-flex items-center px-4 py-2 bg-blue-500/20 rounded-full text-blue-100 text-sm mb-6 border border-blue-300/20">
               <BellAlertIcon className="w-4 h-4 mr-2" />
-              🛡️ Protecting Bowie State University Since 2024
+              Trusted cyber awareness program for Bowie State University
             </div>
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
+            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white mb-6">
               GUARD<span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">BULLDOG</span>
             </h1>
-            <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto">
-              Advanced AI-Powered Phishing Detection & Security Awareness Platform for the Bowie State University Community
+            <p className="text-xl md:text-2xl text-blue-100/95 mb-8 max-w-3xl mx-auto leading-relaxed">
+              Professional phishing prevention and response platform built to help students, faculty, and administrators identify, report, and mitigate threats quickly.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/email-analyzer" className="px-8 py-4 bg-gradient-to-r from-blue-400 to-cyan-500 text-white rounded-xl font-bold text-lg hover:shadow-xl transition transform hover:-translate-y-1">
-                🔍 Analyze Email Now <ArrowRightIcon className="inline w-5 h-5 ml-2" />
+              <Link to="/email-analyzer" className="px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-semibold text-lg hover:shadow-xl transition transform hover:-translate-y-1">
+                Analyze an Email <ArrowRightIcon className="inline w-5 h-5 ml-2" />
               </Link>
-              <Link to="/register" className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 rounded-xl font-bold text-lg hover:shadow-xl transition transform hover:-translate-y-1">
-                Get Started Free <ArrowRightIcon className="inline w-5 h-5 ml-2" />
+              <Link to="/register" className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 rounded-xl font-semibold text-lg hover:shadow-xl transition transform hover:-translate-y-1">
+                Launch Security Workspace <ArrowRightIcon className="inline w-5 h-5 ml-2" />
               </Link>
-              <Link to="/guest-report" className="px-8 py-4 bg-white/10 backdrop-blur text-white rounded-xl font-bold text-lg border-2 border-white/30 hover:bg-white/20 transition">
-                🚨 Report Phishing
+              <Link to="/guest-report" className="px-8 py-4 bg-white/10 backdrop-blur text-white rounded-xl font-semibold text-lg border-2 border-white/30 hover:bg-white/20 transition">
+                Report Suspicious Email
               </Link>
+            </div>
+            <div className="mt-10 flex flex-wrap justify-center gap-3 text-sm text-blue-100/90">
+              <span className="px-3 py-1 rounded-full border border-blue-300/30 bg-blue-500/10">24/7 Availability</span>
+              <span className="px-3 py-1 rounded-full border border-blue-300/30 bg-blue-500/10">Campus-Focused Workflows</span>
+              <span className="px-3 py-1 rounded-full border border-blue-300/30 bg-blue-500/10">Incident Tracking Included</span>
             </div>
           </div>
 
@@ -143,10 +147,10 @@ const Home = () => {
               { value: stats.reports.toLocaleString(), label: 'Reports Processed', icon: '📊' },
               { value: `${stats.score}%`, label: 'Security Score', icon: '✅' },
             ].map((stat, i) => (
-              <div key={i} className="bg-white/10 backdrop-blur rounded-xl p-6 text-center">
+              <div key={i} className="bg-white/10 backdrop-blur border border-white/10 rounded-xl p-6 text-center shadow-lg">
                 <div className="text-3xl mb-2">{stat.icon}</div>
-                <div className="text-3xl font-bold text-white">{stat.value}</div>
-                <div className="text-blue-200 text-sm">{stat.label}</div>
+                <div className="text-3xl font-extrabold text-white tracking-tight">{stat.value}</div>
+                <div className="text-blue-100 text-sm mt-1">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -154,21 +158,21 @@ const Home = () => {
       </section>
 
       {/* Alert Banner */}
-      <section className="bg-gradient-to-r from-red-600 to-orange-600 py-6">
+      <section className="bg-gradient-to-r from-rose-700 to-orange-600 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center text-white mb-4 md:mb-0">
               <ExclamationTriangleIcon className="w-8 h-8 mr-3 animate-pulse" />
               <div>
-                <h3 className="font-bold text-lg">Received a Suspicious Email?</h3>
-                <p className="text-red-100">Report it instantly - no login required!</p>
+                <h3 className="font-bold text-lg">Need to report suspicious activity right now?</h3>
+                <p className="text-red-100">Use anonymous reporting in seconds. No account required.</p>
               </div>
             </div>
             <div className="flex gap-3">
-              <Link to="/guest-report" className="px-6 py-3 bg-white text-red-600 rounded-lg font-bold hover:shadow-lg transition">
-                Report Anonymous
+              <Link to="/guest-report" className="px-6 py-3 bg-white text-red-700 rounded-lg font-semibold hover:shadow-lg transition">
+                Submit Report
               </Link>
-              <Link to="/track-report" className="px-6 py-3 bg-transparent border-2 border-white text-white rounded-lg font-bold hover:bg-white hover:text-red-600 transition">
+              <Link to="/track-report" className="px-6 py-3 bg-transparent border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-red-700 transition">
                 Track Report
               </Link>
             </div>
@@ -177,22 +181,22 @@ const Home = () => {
       </section>
 
       {/* Features */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Comprehensive Security Platform</h2>
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">Security Platform Built for Campus Operations</h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Everything you need to stay protected from phishing attacks
+              Structured prevention, training, and response tools in one professional workspace.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((f, i) => (
-              <div key={i} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition transform hover:-translate-y-2">
+              <div key={i} className="bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition transform hover:-translate-y-2 border border-slate-100">
                 <div className={`w-14 h-14 bg-gradient-to-br ${f.color} rounded-xl flex items-center justify-center mb-6`}>
                   <f.icon className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">{f.title}</h3>
-                <p className="text-gray-600">{f.desc}</p>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">{f.title}</h3>
+                <p className="text-slate-600 leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -203,22 +207,22 @@ const Home = () => {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">How GUARDBULLDOG Works</h2>
-            <p className="text-xl text-gray-600">Simple steps to stay protected</p>
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">How the Protection Workflow Operates</h2>
+            <p className="text-xl text-slate-600">A clear, accountable process from report to resolution.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { step: '1', title: 'Report', desc: 'Submit suspicious emails through our easy reporting tool', icon: '📧' },
-              { step: '2', title: 'Analyze', desc: 'Our AI system analyzes the threat in real-time', icon: '🔍' },
-              { step: '3', title: 'Protect', desc: 'Community is alerted and protected from the threat', icon: '🛡️' },
+              { step: '1', title: 'Report', desc: 'Users submit suspicious messages with key context and evidence.', icon: '📧' },
+              { step: '2', title: 'Assess', desc: 'Automated and human review identifies urgency and likely threat type.', icon: '🔍' },
+              { step: '3', title: 'Respond', desc: 'Security teams publish guidance and track remediation progress.', icon: '🛡️' },
             ].map((item, i) => (
               <div key={i} className="text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-700 to-indigo-700 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl shadow-lg">
                   {item.icon}
                 </div>
-                <div className="text-sm text-blue-600 font-bold mb-2">STEP {item.step}</div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">{item.title}</h3>
-                <p className="text-gray-600">{item.desc}</p>
+                <div className="text-sm text-blue-700 font-bold mb-2 tracking-wide">STEP {item.step}</div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">{item.title}</h3>
+                <p className="text-slate-600">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -226,15 +230,15 @@ const Home = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-gradient-to-br from-blue-50 to-indigo-50">
+      <section className="py-20 bg-gradient-to-br from-slate-100 to-blue-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Trusted by Our Community</h2>
-            <p className="text-xl text-gray-600">What Bowie State members say about us</p>
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">Trusted Across the Bowie State Community</h2>
+            <p className="text-xl text-slate-600">Feedback from faculty, students, and security operations staff.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((t, i) => (
-              <div key={i} className="bg-white rounded-2xl p-8 shadow-lg">
+              <div key={i} className="bg-white rounded-2xl p-8 shadow-md border border-slate-100">
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold">
                     {t.name.split(' ').map(n => n[0]).join('')}
@@ -244,7 +248,7 @@ const Home = () => {
                     <p className="text-sm text-gray-500">{t.role}</p>
                   </div>
                 </div>
-                <p className="text-gray-600 italic">"{t.text}"</p>
+                <p className="text-slate-600 italic leading-relaxed">"{t.text}"</p>
                 <div className="mt-4 text-yellow-400">★★★★★</div>
               </div>
             ))}
@@ -253,13 +257,13 @@ const Home = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-700">
+      <section className="py-20 bg-gradient-to-r from-slate-900 to-blue-900">
         <div className="max-w-4xl mx-auto text-center px-4">
-          <h2 className="text-4xl font-bold text-white mb-6">Ready to Protect Yourself?</h2>
-          <p className="text-xl text-blue-100 mb-8">
-            Join thousands of Bowie State students and faculty in creating a safer digital campus.
+          <h2 className="text-4xl font-bold text-white mb-6">Build a Safer Digital Campus Today</h2>
+          <p className="text-xl text-blue-100 mb-8 leading-relaxed">
+            Start with reporting, training, and tracking tools designed for higher-education security teams.
           </p>
-          <Link to="/register" className="inline-block px-10 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg hover:shadow-xl transition transform hover:-translate-y-1">
+          <Link to="/register" className="inline-block px-10 py-4 bg-white text-blue-700 rounded-xl font-bold text-lg hover:shadow-xl transition transform hover:-translate-y-1">
             Create Free Account
           </Link>
         </div>

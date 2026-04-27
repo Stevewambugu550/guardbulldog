@@ -19,42 +19,15 @@ const generateTrackingToken = () => {
   return `GB-${date}-${random}`;
 };
 
-const ensureReportsTable = async () => {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS reports (
-      id SERIAL PRIMARY KEY,
-      "trackingNumber" VARCHAR(64) UNIQUE NOT NULL,
-      "senderEmail" VARCHAR(255),
-      "senderName" VARCHAR(255),
-      subject TEXT,
-      "emailBody" TEXT,
-      "reportType" VARCHAR(64) DEFAULT 'phishing',
-      severity VARCHAR(32) DEFAULT 'medium',
-      status VARCHAR(32) DEFAULT 'pending',
-      "reportedBy" INTEGER NULL,
-      "reviewedBy" INTEGER NULL,
-      "reviewedAt" TIMESTAMPTZ NULL,
-      "createdAt" TIMESTAMPTZ DEFAULT NOW(),
-      "updatedAt" TIMESTAMPTZ DEFAULT NOW()
-    );
-  `);
-};
-
 exports.handler = async function (event, context) {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
   }
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ success: false, message: 'Method not allowed', msg: 'Method not allowed' })
-    };
+    return { statusCode: 405, headers, body: JSON.stringify({ success: false, message: 'Method not allowed' }) };
   }
 
   try {
-    await ensureReportsTable();
-
     const data = JSON.parse(event.body || '{}');
     const { email, subject, description, suspicious_url } = data;
 
@@ -62,11 +35,7 @@ exports.handler = async function (event, context) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({
-          success: false,
-          message: 'Subject and description are required',
-          msg: 'Subject and description are required'
-        })
+        body: JSON.stringify({ success: false, message: 'Subject and description are required' })
       };
     }
 
@@ -87,11 +56,8 @@ exports.handler = async function (event, context) {
       body: JSON.stringify({
         success: true,
         message: 'Report submitted successfully! Save your tracking token to check status.',
-        msg: 'Report submitted successfully! Save your tracking token to check status.',
-        trackingNumber: result.rows[0].trackingNumber,
         tracking_token: result.rows[0].trackingNumber,
         data: {
-          trackingNumber: result.rows[0].trackingNumber,
           tracking_token: result.rows[0].trackingNumber,
           report_id: result.rows[0].id,
           submitted_at: result.rows[0].createdAt
@@ -103,12 +69,7 @@ exports.handler = async function (event, context) {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({
-        success: false,
-        message: 'Error submitting report',
-        msg: 'Error submitting report',
-        error: err.message
-      })
+      body: JSON.stringify({ success: false, message: 'Error submitting report', error: err.message })
     };
   }
 };
