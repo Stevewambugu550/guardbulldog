@@ -15,30 +15,58 @@ const headers = {
 };
 
 const ensureUsersTable = async () => {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      "firstName" VARCHAR(100),
-      "lastName" VARCHAR(100),
-      email VARCHAR(255) UNIQUE,
-      phone VARCHAR(30),
-      password TEXT,
-      role VARCHAR(50) DEFAULT 'student',
-      department VARCHAR(100),
-      "createdAt" TIMESTAMPTZ DEFAULT NOW()
-    );
+  // Check if table exists and inspect actual column names
+  const { rows: colRows } = await pool.query(`
+    SELECT column_name FROM information_schema.columns 
+    WHERE table_name = 'users' AND table_schema = 'public'
   `);
+  const existingCols = colRows.map(r => r.column_name);
 
-  // Safely add columns that may already exist with different types
-  const safeAlter = async (sql) => {
-    try { await pool.query(sql); } catch (e) { /* column likely exists */ }
-  };
-  await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT');
-  await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)');
-  await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)');
-  await safeAlter("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'student'");
-  await safeAlter('ALTER TABLE users ALTER COLUMN password DROP NOT NULL');
-  await safeAlter('ALTER TABLE users ALTER COLUMN email DROP NOT NULL');
+  if (existingCols.length === 0) {
+    // Table doesn't exist yet - create it
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        "firstName" VARCHAR(100),
+        "lastName" VARCHAR(100),
+        email VARCHAR(255) UNIQUE,
+        phone VARCHAR(30),
+        password TEXT,
+        role VARCHAR(50) DEFAULT 'student',
+        department VARCHAR(100),
+        "createdAt" TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+  } else {
+    // Table exists - ensure all needed columns exist
+    const safeAlter = async (sql) => {
+      try { await pool.query(sql); } catch (e) { /* column likely exists */ }
+    };
+
+    // If lowercase columns exist without camelCase, add the camelCase versions
+    if (existingCols.includes('firstname') && !existingCols.includes('firstName')) {
+      await safeAlter(`ALTER TABLE users RENAME COLUMN firstname TO "firstName"`);
+    } else if (!existingCols.includes('firstname') && !existingCols.includes('firstName')) {
+      await safeAlter(`ALTER TABLE users ADD COLUMN "firstName" VARCHAR(100)`);
+    }
+
+    if (existingCols.includes('lastname') && !existingCols.includes('lastName')) {
+      await safeAlter(`ALTER TABLE users RENAME COLUMN lastname TO "lastName"`);
+    } else if (!existingCols.includes('lastname') && !existingCols.includes('lastName')) {
+      await safeAlter(`ALTER TABLE users ADD COLUMN "lastName" VARCHAR(100)`);
+    }
+
+    if (existingCols.includes('createdat') && !existingCols.includes('createdAt')) {
+      await safeAlter(`ALTER TABLE users RENAME COLUMN createdat TO "createdAt"`);
+    }
+
+    await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT');
+    await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)');
+    await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)');
+    await safeAlter("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'student'");
+    await safeAlter('ALTER TABLE users ALTER COLUMN password DROP NOT NULL');
+    await safeAlter('ALTER TABLE users ALTER COLUMN email DROP NOT NULL');
+  }
 };
 
 exports.handler = async function (event, context) {

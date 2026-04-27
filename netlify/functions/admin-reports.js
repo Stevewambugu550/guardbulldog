@@ -59,28 +59,46 @@ const ensureReportsTable = async () => {
 };
 
 const ensureUsersTable = async () => {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      "firstName" VARCHAR(100),
-      "lastName" VARCHAR(100),
-      email VARCHAR(255) UNIQUE,
-      phone VARCHAR(30),
-      password TEXT,
-      role VARCHAR(50) DEFAULT 'student',
-      department VARCHAR(100),
-      "createdAt" TIMESTAMPTZ DEFAULT NOW()
-    );
+  const { rows: colRows } = await pool.query(`
+    SELECT column_name FROM information_schema.columns 
+    WHERE table_name = 'users' AND table_schema = 'public'
   `);
-  const safeAlter = async (sql) => {
-    try { await pool.query(sql); } catch (e) { /* column likely exists */ }
-  };
-  await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT');
-  await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)');
-  await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)');
-  await safeAlter("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'student'");
-  await safeAlter('ALTER TABLE users ALTER COLUMN password DROP NOT NULL');
-  await safeAlter('ALTER TABLE users ALTER COLUMN email DROP NOT NULL');
+  const existingCols = colRows.map(r => r.column_name);
+
+  if (existingCols.length === 0) {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        "firstName" VARCHAR(100),
+        "lastName" VARCHAR(100),
+        email VARCHAR(255) UNIQUE,
+        phone VARCHAR(30),
+        password TEXT,
+        role VARCHAR(50) DEFAULT 'student',
+        department VARCHAR(100),
+        "createdAt" TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+  } else {
+    const safeAlter = async (sql) => {
+      try { await pool.query(sql); } catch (e) { /* column likely exists */ }
+    };
+    if (existingCols.includes('firstname') && !existingCols.includes('firstName')) {
+      await safeAlter(`ALTER TABLE users RENAME COLUMN firstname TO "firstName"`);
+    }
+    if (existingCols.includes('lastname') && !existingCols.includes('lastName')) {
+      await safeAlter(`ALTER TABLE users RENAME COLUMN lastname TO "lastName"`);
+    }
+    if (existingCols.includes('createdat') && !existingCols.includes('createdAt')) {
+      await safeAlter(`ALTER TABLE users RENAME COLUMN createdat TO "createdAt"`);
+    }
+    await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT');
+    await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)');
+    await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)');
+    await safeAlter("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'student'");
+    await safeAlter('ALTER TABLE users ALTER COLUMN password DROP NOT NULL');
+    await safeAlter('ALTER TABLE users ALTER COLUMN email DROP NOT NULL');
+  }
 };
 
 exports.handler = async function (event, context) {
