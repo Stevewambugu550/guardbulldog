@@ -58,9 +58,10 @@ exports.handler = async function (event, context) {
     };
     if (!findCol(existingCols, 'firstname', 'firstName')) await safeAlter(`ALTER TABLE users ADD COLUMN firstname VARCHAR(255)`);
     if (!findCol(existingCols, 'lastname', 'lastName')) await safeAlter(`ALTER TABLE users ADD COLUMN lastname VARCHAR(255)`);
-    if (!findCol(existingCols, 'password')) await safeAlter(`ALTER TABLE users ADD COLUMN password TEXT`);
+    if (!findCol(existingCols, 'password', 'password_hash')) await safeAlter(`ALTER TABLE users ADD COLUMN password TEXT`);
     if (!findCol(existingCols, 'role')) await safeAlter(`ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'student'`);
     if (!findCol(existingCols, 'department')) await safeAlter(`ALTER TABLE users ADD COLUMN department VARCHAR(255)`);
+    if (findCol(existingCols, 'password_hash')) await safeAlter('ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL');
     await safeAlter('ALTER TABLE users ALTER COLUMN password DROP NOT NULL');
     await safeAlter('ALTER TABLE users ALTER COLUMN email DROP NOT NULL');
 
@@ -68,6 +69,7 @@ exports.handler = async function (event, context) {
     const cols = await getColumns();
     const fnCol = findCol(cols, 'firstname', 'firstName') || 'firstname';
     const lnCol = findCol(cols, 'lastname', 'lastName') || 'lastname';
+    const pwCol = findCol(cols, 'password_hash', 'password') || 'password';
 
     // Check if admin already exists
     const existingAdmin = await pool.query(
@@ -99,28 +101,28 @@ exports.handler = async function (event, context) {
 
     // Create Super Admin
     await pool.query(`
-      INSERT INTO users ("${fnCol}", "${lnCol}", email, password, role, department)
+      INSERT INTO users ("${fnCol}", "${lnCol}", email, "${pwCol}", role, department)
       VALUES ($1, $2, $3, $4, $5, $6)
       ON CONFLICT (email) DO NOTHING
     `, ['Admin', 'User', 'admin@bowie.edu', adminPassword, 'super_admin', 'IT Security']);
 
     // Create Admin
     await pool.query(`
-      INSERT INTO users ("${fnCol}", "${lnCol}", email, password, role, department)
+      INSERT INTO users ("${fnCol}", "${lnCol}", email, "${pwCol}", role, department)
       VALUES ($1, $2, $3, $4, $5, $6)
       ON CONFLICT (email) DO NOTHING
     `, ['Security', 'Officer', 'security@bowie.edu', securityPassword, 'admin', 'IT Security']);
 
     // Create Student
     await pool.query(`
-      INSERT INTO users ("${fnCol}", "${lnCol}", email, password, role, department)
+      INSERT INTO users ("${fnCol}", "${lnCol}", email, "${pwCol}", role, department)
       VALUES ($1, $2, $3, $4, $5, $6)
       ON CONFLICT (email) DO NOTHING
     `, ['John', 'Student', 'student@bowie.edu', studentPassword, 'student', 'Computer Science']);
 
     // Create Faculty
     await pool.query(`
-      INSERT INTO users ("${fnCol}", "${lnCol}", email, password, role, department)
+      INSERT INTO users ("${fnCol}", "${lnCol}", email, "${pwCol}", role, department)
       VALUES ($1, $2, $3, $4, $5, $6)
       ON CONFLICT (email) DO NOTHING
     `, ['Jane', 'Faculty', 'faculty@bowie.edu', facultyPassword, 'faculty', 'Information Technology']);

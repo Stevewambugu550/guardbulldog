@@ -96,7 +96,17 @@ exports.handler = async function (event, context) {
       };
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Handle both password and password_hash column names
+    const storedPassword = user.password || user.password_hash;
+    if (!storedPassword) {
+      return { 
+        statusCode: 401, 
+        headers,
+        body: JSON.stringify({ message: 'Invalid credentials', msg: 'Invalid credentials' }) 
+      };
+    }
+
+    const isMatch = await bcrypt.compare(password, storedPassword);
     if (!isMatch) {
       return { 
         statusCode: 401, 

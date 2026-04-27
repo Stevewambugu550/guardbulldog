@@ -58,10 +58,12 @@ const ensureUsersTable = async () => {
   if (!findCol(existingCols, 'firstname', 'firstName')) await safeAlter(`ALTER TABLE users ADD COLUMN firstname VARCHAR(100)`);
   if (!findCol(existingCols, 'lastname', 'lastName')) await safeAlter(`ALTER TABLE users ADD COLUMN lastname VARCHAR(100)`);
   if (!findCol(existingCols, 'email')) await safeAlter(`ALTER TABLE users ADD COLUMN email VARCHAR(255) UNIQUE`);
-  if (!findCol(existingCols, 'password')) await safeAlter(`ALTER TABLE users ADD COLUMN password TEXT`);
+  if (!findCol(existingCols, 'password', 'password_hash')) await safeAlter(`ALTER TABLE users ADD COLUMN password TEXT`);
   if (!findCol(existingCols, 'phone')) await safeAlter(`ALTER TABLE users ADD COLUMN phone VARCHAR(30)`);
   if (!findCol(existingCols, 'role')) await safeAlter(`ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'student'`);
   if (!findCol(existingCols, 'department')) await safeAlter(`ALTER TABLE users ADD COLUMN department VARCHAR(100)`);
+  // Make password columns nullable
+  if (findCol(existingCols, 'password_hash')) await safeAlter('ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL');
   await safeAlter('ALTER TABLE users ALTER COLUMN password DROP NOT NULL');
   await safeAlter('ALTER TABLE users ALTER COLUMN email DROP NOT NULL');
 };
@@ -112,9 +114,10 @@ exports.handler = async function (event, context) {
     // Use actual column names from DB
     const fnCol = findCol(existingCols, 'firstname', 'firstName') || 'firstname';
     const lnCol = findCol(existingCols, 'lastname', 'lastName') || 'lastname';
+    const pwCol = findCol(existingCols, 'password_hash', 'password') || 'password';
 
     const result = await pool.query(
-      `INSERT INTO users ("${fnCol}", "${lnCol}", email, phone, password, role, department) 
+      `INSERT INTO users ("${fnCol}", "${lnCol}", email, phone, "${pwCol}", role, department) 
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [firstName, lastName, email, phone || null, hashedPassword, role, department || 'Not Specified']
     );
