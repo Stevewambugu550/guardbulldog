@@ -66,6 +66,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/reports/*"
+  to = "/.netlify/functions/report-detail?id=:splat"
+  status = 200
+
+[[redirects]]
   from = "/api/guest/submit"
   to = "/.netlify/functions/guest-submit"
   status = 200
@@ -78,6 +83,16 @@
 [[redirects]]
   from = "/api/reports"
   to = "/.netlify/functions/get-reports"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/forgot-password"
+  to = "/.netlify/functions/forgot-password"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/reset-password"
+  to = "/.netlify/functions/reset-password"
   status = 200
 
 [[redirects]]

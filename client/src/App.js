@@ -15,6 +15,8 @@ import About from './pages/About/About';
 import Contact from './pages/Contact/Contact';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import ForgotPassword from './pages/Auth/ForgotPassword';
+import ResetPassword from './pages/Auth/ResetPassword';
 import Dashboard from './pages/Dashboard/Dashboard';
 import ReportPhishing from './pages/Reports/ReportPhishing';
 import MyReports from './pages/Reports/MyReports';
@@ -98,6 +100,8 @@ function App() {
                   <Register />
                 </PublicRoute>
               } />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
               {/* Protected Routes with Layout */}
               <Route path="/app" element={

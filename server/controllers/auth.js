@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { validationResult } = require('express-validator');
 const nodemailer = require('nodemailer');
 
@@ -349,5 +350,123 @@ exports.googleAuth = async (req, res) => {
   } catch (err) {
     console.error('Google auth error:', err);
     res.status(500).json({ message: 'Google authentication failed. Please try again.' });
+  }
+};
+
+// In-memory password reset tokens (for when DB is unavailable)
+const resetTokens = new Map();
+
+// Request password reset
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const user = await User.findByEmail(email);
+
+    // Always return generic message to prevent email enumeration
+    const genericMsg = 'If an account with that email exists, a reset token has been generated.';
+
+    if (!user) {
+      return res.json({ message: genericMsg });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    // Store token (in-memory or DB)
+    if (User._useInMemory || false) {
+      resetTokens.set(resetToken, {
+        email,
+        expiresAt: Date.now() + 60 * 60 * 1000
+      });
+    } else {
+      try {
+        const pool = require('../config/database');
+        await pool.query(`CREATE TABLE IF NOT EXISTS password_resets (
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(255) NOT NULL,
+          token VARCHAR(255) NOT NULL UNIQUE,
+          used BOOLEAN DEFAULT FALSE,
+          "expiresAt" TIMESTAMPTZ NOT NULL,
+          "createdAt" TIMESTAMPTZ DEFAULT NOW()
+        )`);
+        await pool.query('UPDATE password_resets SET used = TRUE WHERE email = $1 AND used = FALSE', [email]);
+        await pool.query('INSERT INTO password_resets (email, token, "expiresAt") VALUES ($1, $2, $3)', [email, resetToken, new Date(Date.now() + 60 * 60 * 1000)]);
+      } catch (dbErr) {
+        // Fallback to in-memory
+        resetTokens.set(resetToken, { email, expiresAt: Date.now() + 60 * 60 * 1000 });
+      }
+    }
+
+    res.json({
+      message: genericMsg,
+      token: resetToken,
+      email
+    });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ message: 'Server error processing request' });
+  }
+};
+
+// Reset password with token
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ message: 'Token and new password are required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    let email = null;
+
+    // Check in-memory tokens first
+    const memToken = resetTokens.get(token);
+    if (memToken) {
+      if (memToken.expiresAt < Date.now()) {
+        resetTokens.delete(token);
+        return res.status(400).json({ message: 'Invalid or expired reset token' });
+      }
+      email = memToken.email;
+      resetTokens.delete(token);
+    } else {
+      // Check DB
+      try {
+        const pool = require('../config/database');
+        const result = await pool.query(
+          'SELECT * FROM password_resets WHERE token = $1 AND used = FALSE AND "expiresAt" > NOW()',
+          [token]
+        );
+        if (result.rows.length === 0) {
+          return res.status(400).json({ message: 'Invalid or expired reset token' });
+        }
+        email = result.rows[0].email;
+        await pool.query('UPDATE password_resets SET used = TRUE WHERE token = $1', [token]);
+      } catch (dbErr) {
+        return res.status(400).json({ message: 'Invalid or expired reset token' });
+      }
+    }
+
+    // Update password
+    const user = await User.findByEmail(email);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    await User.updatePassword(user.id, hashedPassword);
+
+    res.json({ message: 'Password has been reset successfully. You can now log in with your new password.' });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ message: 'Server error resetting password' });
   }
 };

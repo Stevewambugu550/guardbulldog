@@ -58,6 +58,7 @@ const MyReports = () => {
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       return (
+        report.subject?.toLowerCase().includes(searchLower) ||
         report.emailSubject?.toLowerCase().includes(searchLower) ||
         report.senderEmail?.toLowerCase().includes(searchLower)
       );

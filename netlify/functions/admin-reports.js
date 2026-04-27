@@ -38,6 +38,7 @@ const ensureReportsTable = async () => {
       "senderName" VARCHAR(255),
       subject TEXT,
       "emailBody" TEXT,
+      "emailHeaders" TEXT,
       "reportType" VARCHAR(64) DEFAULT 'phishing',
       severity VARCHAR(32) DEFAULT 'medium',
       status VARCHAR(32) DEFAULT 'pending',
@@ -48,6 +49,13 @@ const ensureReportsTable = async () => {
       "updatedAt" TIMESTAMPTZ DEFAULT NOW()
     );
   `);
+  const safeAlter = async (sql) => {
+    try { await pool.query(sql); } catch (e) { /* column likely exists */ }
+  };
+  await safeAlter('ALTER TABLE reports ADD COLUMN IF NOT EXISTS "emailHeaders" TEXT');
+  await safeAlter('ALTER TABLE reports ADD COLUMN IF NOT EXISTS "senderName" VARCHAR(255)');
+  await safeAlter('ALTER TABLE reports ADD COLUMN IF NOT EXISTS severity VARCHAR(32) DEFAULT \'medium\'');
+  await safeAlter('ALTER TABLE reports ALTER COLUMN "trackingNumber" DROP NOT NULL');
 };
 
 const ensureUsersTable = async () => {
@@ -64,11 +72,15 @@ const ensureUsersTable = async () => {
       "createdAt" TIMESTAMPTZ DEFAULT NOW()
     );
   `);
-
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT');
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)');
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)');
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'student'");
+  const safeAlter = async (sql) => {
+    try { await pool.query(sql); } catch (e) { /* column likely exists */ }
+  };
+  await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT');
+  await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)');
+  await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)');
+  await safeAlter("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'student'");
+  await safeAlter('ALTER TABLE users ALTER COLUMN password DROP NOT NULL');
+  await safeAlter('ALTER TABLE users ALTER COLUMN email DROP NOT NULL');
 };
 
 exports.handler = async function (event, context) {
@@ -85,8 +97,37 @@ exports.handler = async function (event, context) {
     await ensureReportsTable();
     await ensureUsersTable();
 
-    // GET - List all reports with reporter info
+    // GET - List all reports with reporter info, or single report by ID
     if (event.httpMethod === 'GET') {
+      // Check if requesting a single report by ID via query param
+      const reportId = event.queryStringParameters?.id;
+      
+      if (reportId) {
+        const result = await pool.query(`
+          SELECT 
+            r.id, r."trackingNumber", r."senderEmail", r."senderName",
+            r.subject, r."emailBody", r."emailHeaders",
+            r."reportType", r.severity, r.status,
+            r."reportedBy", r."reviewedBy", r."reviewedAt",
+            r."createdAt", r."updatedAt",
+            u."firstName", u."lastName", u.email as reporter_email
+          FROM reports r
+          LEFT JOIN users u ON r."reportedBy" = u.id
+          WHERE r.id = $1
+        `, [reportId]);
+
+        if (result.rows.length === 0) {
+          return { statusCode: 404, headers, body: JSON.stringify({ msg: 'Report not found' }) };
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ report: result.rows[0] })
+        };
+      }
+
+      // List all reports
       const result = await pool.query(`
         SELECT 
           r.id,
@@ -95,9 +136,11 @@ exports.handler = async function (event, context) {
           r."senderName",
           r.subject,
           r."emailBody",
+          r."emailHeaders",
           r."reportType",
           r.severity,
           r.status,
+          r."reportedBy",
           r."createdAt",
           r."updatedAt",
           u."firstName",

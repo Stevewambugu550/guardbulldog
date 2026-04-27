@@ -29,10 +29,16 @@ const ensureUsersTable = async () => {
     );
   `);
 
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT');
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)');
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)');
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'student'");
+  // Safely add columns that may already exist with different types
+  const safeAlter = async (sql) => {
+    try { await pool.query(sql); } catch (e) { /* column likely exists */ }
+  };
+  await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT');
+  await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)');
+  await safeAlter('ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)');
+  await safeAlter("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'student'");
+  await safeAlter('ALTER TABLE users ALTER COLUMN password DROP NOT NULL');
+  await safeAlter('ALTER TABLE users ALTER COLUMN email DROP NOT NULL');
 };
 
 exports.handler = async function (event, context) {
@@ -47,7 +53,17 @@ exports.handler = async function (event, context) {
   try {
     await ensureUsersTable();
 
-    const { firstName, lastName, email, password, phone, department } = JSON.parse(event.body);
+    const parsed = JSON.parse(event.body || '{}');
+    const { firstName, lastName, email, password, phone, department } = parsed;
+
+    // Validate required fields
+    if (!firstName || !lastName || !email || !password) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ message: 'First name, last name, email, and password are required', msg: 'First name, last name, email, and password are required' })
+      };
+    }
 
     // Check if user exists
     const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
@@ -108,7 +124,11 @@ exports.handler = async function (event, context) {
     return { 
       statusCode: 500, 
       headers,
-      body: JSON.stringify({ message: 'Server error during registration.', msg: 'Server error during registration.' }) 
+      body: JSON.stringify({ 
+        message: 'Server error during registration.', 
+        msg: 'Server error during registration.',
+        error: err.message 
+      }) 
     };
   }
 };

@@ -41,6 +41,7 @@ const ensureReportsTable = async () => {
       "senderName" VARCHAR(255),
       subject TEXT,
       "emailBody" TEXT,
+      "emailHeaders" TEXT,
       "reportType" VARCHAR(64) DEFAULT 'phishing',
       severity VARCHAR(32) DEFAULT 'medium',
       status VARCHAR(32) DEFAULT 'pending',
@@ -51,6 +52,14 @@ const ensureReportsTable = async () => {
       "updatedAt" TIMESTAMPTZ DEFAULT NOW()
     );
   `);
+  // Safely add columns that may be missing
+  const safeAlter = async (sql) => {
+    try { await pool.query(sql); } catch (e) { /* column likely exists */ }
+  };
+  await safeAlter('ALTER TABLE reports ADD COLUMN IF NOT EXISTS "emailHeaders" TEXT');
+  await safeAlter('ALTER TABLE reports ADD COLUMN IF NOT EXISTS "senderName" VARCHAR(255)');
+  await safeAlter('ALTER TABLE reports ADD COLUMN IF NOT EXISTS severity VARCHAR(32) DEFAULT \'medium\'');
+  await safeAlter('ALTER TABLE reports ALTER COLUMN "trackingNumber" DROP NOT NULL');
 };
 
 // Parse multipart form-data (text fields only; skip files for demo)
@@ -113,18 +122,19 @@ exports.handler = async function (event, context) {
 
     const senderEmail = data.senderEmail || data.sender_email || '';
     const senderName = data.senderName || data.sender_name || '';
-    const subject = data.subject || data.subjectLine || data.subject_line || 'No subject';
-    const emailBody = data.emailBody || data.description || data.email_body || '';
+    const subject = data.subject || data.subjectLine || data.subject_line || data.emailSubject || 'No subject';
+    const emailBody = data.emailBody || data.description || data.email_body || data.emailContent || '';
+    const emailHeaders = data.emailHeaders || data.email_headers || null;
     const reportType = data.reportType || data.category || 'phishing';
     const severity = data.severity || 'medium';
     const trackingNumber = generateTrackingNumber();
 
     const result = await pool.query(
       `INSERT INTO reports 
-        ("trackingNumber", "senderEmail", "senderName", subject, "emailBody", "reportType", severity, status, "reportedBy", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, NOW(), NOW())
+        ("trackingNumber", "senderEmail", "senderName", subject, "emailBody", "emailHeaders", "reportType", severity, status, "reportedBy", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, NOW(), NOW())
        RETURNING *`,
-      [trackingNumber, senderEmail, senderName, subject, emailBody, reportType, severity, user.id]
+      [trackingNumber, senderEmail, senderName, subject, emailBody, emailHeaders, reportType, severity, user.id]
     );
 
     return {

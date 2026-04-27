@@ -63,4 +63,14 @@ router.put(
 // @access  Public
 router.post('/google', authController.googleAuth);
 
+// @route   POST api/auth/forgot-password
+// @desc    Request password reset token
+// @access  Public
+router.post('/forgot-password', authController.forgotPassword);
+
+// @route   POST api/auth/reset-password
+// @desc    Reset password using token
+// @access  Public
+router.post('/reset-password', authController.resetPassword);
+
 module.exports = router;
