@@ -92,9 +92,25 @@ GuardBulldog is a full-stack web application that empowers students, faculty, an
 |------|----------|
 | **Git** | Version control and collaboration |
 | **npm** | Package management |
-| **Heroku** | Cloud platform for deployment |
-| **Netlify** | Frontend hosting and continuous deployment |
-| **PostgreSQL (Heroku)** | Managed database service |
+| **Netlify** | Full-stack hosting — frontend, serverless functions, redirects |
+| **NeonDB (PostgreSQL)** | Managed serverless PostgreSQL database |
+
+---
+
+## 🌐 Live Application
+
+**Production URL:** https://guardbulldog-bsu-final.netlify.app
+
+### 🔑 Test Credentials
+
+| Role | Email | Password |
+|------|-------|----------|
+| **Super Admin** | admin@bowie.edu | Admin123! |
+| **Admin** | security@bowie.edu | Security123! |
+| **Student** | student@bowie.edu | Student123! |
+| **Faculty** | faculty@bowie.edu | Faculty123! |
+
+> **Note:** Admin and Super Admin roles have access to the Admin Dashboard at `/app/admin`.
 
 ---
 
