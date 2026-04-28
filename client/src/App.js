@@ -27,6 +27,7 @@ import ModuleDetails from './pages/Education/ModuleDetails';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import AdminReports from './pages/Admin/AdminReports';
 import AdminUsers from './pages/Admin/AdminUsers';
+import AdminReportDetail from './pages/Admin/AdminReportDetail';
 import SystemSettings from './pages/Admin/SystemSettings';
 import SecurityLogs from './pages/Admin/SecurityLogs';
 import GuestReport from './pages/Guest/GuestReport';
@@ -134,6 +135,11 @@ function App() {
                 <Route path="admin/users" element={
                   <ProtectedRoute requiredRole="admin">
                     <AdminUsers />
+                  </ProtectedRoute>
+                } />
+                <Route path="admin/reports/:id" element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminReportDetail />
                   </ProtectedRoute>
                 } />
 

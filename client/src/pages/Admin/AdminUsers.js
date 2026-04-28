@@ -18,12 +18,15 @@ const AdminUsers = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axios.get(`${API_URL}/api/admin/users`);
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${API_URL}/api/admin/users`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setUsers(res.data.users || res.data || []);
         setError(null);
       } catch (err) {
         console.log('Fetch users error:', err.message);
-        setError('Failed to load users');
+        setError('Failed to load users. ' + (err.response?.data?.msg || err.message));
       } finally {
         setLoading(false);
       }
@@ -64,7 +67,7 @@ const AdminUsers = () => {
   // Filter users
   const filteredUsers = users.filter(user => {
     const matchesSearch = searchTerm === '' || 
-      `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      `${user.firstName || user.firstname || ''} ${user.lastName || user.lastname || ''}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (user.email || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === '' || user.role === roleFilter;
     return matchesSearch && matchesRole;
@@ -164,11 +167,11 @@ const AdminUsers = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                          {user.firstName?.[0]}{user.lastName?.[0]}
+                          {(user.firstName || user.firstname || '?')[0]}{(user.lastName || user.lastname || '')[0]}
                         </div>
                         <div className="ml-3">
                           <p className="text-sm font-medium text-gray-900">
-                            {user.firstName} {user.lastName}
+                            {user.firstName || user.firstname || ''} {user.lastName || user.lastname || ''}
                           </p>
                         </div>
                       </div>
@@ -185,7 +188,7 @@ const AdminUsers = () => {
                       {user.department || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                      {(user.createdAt || user.createdat) ? new Date(user.createdAt || user.createdat).toLocaleDateString() : 'N/A'}
                     </td>
                   </tr>
                 ))}

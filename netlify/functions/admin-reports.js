@@ -145,6 +145,15 @@ exports.handler = async function (event, context) {
         };
       }
 
+      // Detect actual user column names
+      const { rows: userCols } = await pool.query(`
+        SELECT column_name FROM information_schema.columns 
+        WHERE table_name = 'users' AND table_schema = 'public'
+      `);
+      const colNames = userCols.map(r => r.column_name);
+      const fnCol = colNames.includes('firstName') ? '"firstName"' : colNames.includes('firstname') ? 'firstname' : 'NULL';
+      const lnCol = colNames.includes('lastName') ? '"lastName"' : colNames.includes('lastname') ? 'lastname' : 'NULL';
+
       // List all reports
       const result = await pool.query(`
         SELECT 
@@ -161,8 +170,8 @@ exports.handler = async function (event, context) {
           r."reportedBy",
           r."createdAt",
           r."updatedAt",
-          u."firstName",
-          u."lastName",
+          u.${fnCol} as "firstName",
+          u.${lnCol} as "lastName",
           u.email as reporter_email
         FROM reports r
         LEFT JOIN users u ON r."reportedBy" = u.id
@@ -178,19 +187,27 @@ exports.handler = async function (event, context) {
 
     // PUT - Update report status
     if (event.httpMethod === 'PUT') {
-      const pathParts = event.path.split('/');
-      const reportId = pathParts[pathParts.length - 2];
-      const { status } = JSON.parse(event.body);
+      const body = JSON.parse(event.body || '{}');
+      // Accept reportId from body or from path
+      const reportId = body.reportId || body.id || (() => {
+        const pathParts = event.path.split('/');
+        return pathParts[pathParts.length - 1];
+      })();
+      const { status, notes } = body;
+
+      if (!reportId || !status) {
+        return { statusCode: 400, headers, body: JSON.stringify({ msg: 'reportId and status are required' }) };
+      }
 
       await pool.query(
-        'UPDATE reports SET status = $1, "updatedAt" = NOW(), "reviewedBy" = $2, "reviewedAt" = NOW() WHERE id = $3',
+        `UPDATE reports SET status = $1, "updatedAt" = NOW(), "reviewedBy" = $2, "reviewedAt" = NOW() WHERE id = $3`,
         [status, admin.id, reportId]
       );
 
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ msg: 'Report status updated' })
+        body: JSON.stringify({ msg: 'Report status updated', reportId, status })
       };
     }
 

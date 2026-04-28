@@ -31,25 +31,40 @@ const verifyAdmin = (event) => {
   }
 };
 
-const ensureUsersTable = async () => {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      "firstName" VARCHAR(100),
-      "lastName" VARCHAR(100),
-      email VARCHAR(255) UNIQUE,
-      phone VARCHAR(30),
-      password TEXT,
-      role VARCHAR(50) DEFAULT 'student',
-      department VARCHAR(100),
-      "createdAt" TIMESTAMPTZ DEFAULT NOW()
-    );
-  `);
+const getColumns = async (table) => {
+  const { rows } = await pool.query(`
+    SELECT column_name FROM information_schema.columns 
+    WHERE table_name = $1 AND table_schema = 'public'
+  `, [table]);
+  return rows.map(r => r.column_name);
+};
 
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT');
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)');
-  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)');
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'student'");
+const findCol = (cols, ...candidates) => {
+  for (const c of candidates) { if (cols.includes(c)) return c; }
+  return null;
+};
+
+const ensureUsersTable = async () => {
+  const cols = await getColumns('users');
+  const safeAlter = async (sql) => { try { await pool.query(sql); } catch (e) {} };
+
+  if (cols.length === 0) {
+    await pool.query(`CREATE TABLE users (
+      id SERIAL PRIMARY KEY, firstname VARCHAR(100), lastname VARCHAR(100),
+      email VARCHAR(255) UNIQUE, phone VARCHAR(30), password TEXT,
+      role VARCHAR(50) DEFAULT 'student', department VARCHAR(100),
+      createdat TIMESTAMPTZ DEFAULT NOW()
+    )`);
+    return;
+  }
+  if (!findCol(cols, 'firstname', 'firstName')) await safeAlter(`ALTER TABLE users ADD COLUMN firstname VARCHAR(100)`);
+  if (!findCol(cols, 'lastname', 'lastName')) await safeAlter(`ALTER TABLE users ADD COLUMN lastname VARCHAR(100)`);
+  if (!findCol(cols, 'password', 'password_hash')) await safeAlter(`ALTER TABLE users ADD COLUMN password TEXT`);
+  if (!findCol(cols, 'phone')) await safeAlter(`ALTER TABLE users ADD COLUMN phone VARCHAR(30)`);
+  if (!findCol(cols, 'role')) await safeAlter(`ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'student'`);
+  if (!findCol(cols, 'department')) await safeAlter(`ALTER TABLE users ADD COLUMN department VARCHAR(100)`);
+  if (findCol(cols, 'password_hash')) await safeAlter('ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL');
+  await safeAlter('ALTER TABLE users ALTER COLUMN password DROP NOT NULL');
 };
 
 exports.handler = async function (event, context) {
@@ -118,6 +133,6 @@ exports.handler = async function (event, context) {
 
   } catch (err) {
     console.error('Admin Users Error:', err);
-    return { statusCode: 500, headers, body: JSON.stringify({ msg: 'Server error' }) };
+    return { statusCode: 500, headers, body: JSON.stringify({ msg: 'Server error', error: err.message }) };
   }
 };
